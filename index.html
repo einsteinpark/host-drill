@@ -78,6 +78,13 @@ h1,h2{margin:0;font-weight:600}
 .qrow .nm{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qrow.now{background:var(--row-hi);border-left-color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel)}
 .qrow.walkin{border-left-color:var(--s2)}
+.qrow.door{border-left-color:var(--sq);background:#3A3320;text-align:left;width:100%}
+.qrow.door.over{border-left-color:var(--bad);background:#3A2521}
+.qrow.door.subj{box-shadow:inset 0 0 0 1px var(--sel)}
+.qrow .wt{font-size:11px;font-weight:700;color:var(--sq);white-space:nowrap}
+.qrow.door.over .wt{color:var(--bad)}
+.rail-split{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--faint);padding:2px 6px 4px;flex:none;align-self:center}
 .qrow .chip{font-size:9.5px;font-weight:700;letter-spacing:.05em;padding:1px 5px;border-radius:3px;
   border:1px solid currentColor;white-space:nowrap}
 .chip.occ{color:var(--occ)} .chip.walk{color:var(--s2)} .chip.vip{color:var(--sel)}
@@ -212,6 +219,8 @@ svg.floor{display:block;width:100%;height:auto;flex:none}
       <button data-ty="mid" aria-pressed="true">Mid</button>
       <button data-ty="busy" aria-pressed="false">Busy</button>
     </div>
+    <button class="iconbtn" id="endBtn" style="width:auto;padding:0 11px;font-size:11.5px;font-weight:600"
+      title="Stop here and score what you have done so far">End &amp; score</button>
     <button class="iconbtn mono" id="seedBtn" title="Same number, same night — give every trainee the same room" style="width:auto;padding:0 9px;font-size:11.5px">#0000</button>
   </header>
 
@@ -245,7 +254,7 @@ svg.floor{display:block;width:100%;height:auto;flex:none}
 const F={
   open:17*60, close:22*60+45, last:21*60+45,
   reset:15,          // check paid, then fifteen minutes to clear and reset
-  grace:15,          // a party will stand at the door this long for a table
+  walkOut:45,        // held longer than this past their booking and they leave
   /* How long a table actually sits, by party size. The check lands somewhere in
      this range — drawn once per party, so a seed always plays the same. */
   dine:[[2,60,105],[3,75,120],[4,90,120],[6,90,150],[99,120,180]],
@@ -428,11 +437,21 @@ function build(seed,type,mode){
           shift:cfg.servers===3?"Friday–Saturday":"Sunday–Thursday"};
 }
 
-const reset=()=>{S={i:0,seats:{},log:[],over:null,pending:[],missed:[],waited:0,
+const reset=()=>{S={i:0,seats:{},log:[],over:null,pending:[],missed:[],
+                     waiting:[],subject:null,
                      clock:N.queue[0]?N.queue[0].time:F.open};};
 
 /* ── floor state ── */
-const cur=()=>S.over?null:N.queue[S.i]||null;
+const arrival=()=>N.queue[S.i]||null;
+const heldOf=id=>S.waiting.find(w=>w.p.id===id);
+function cur(){
+  if(S.over) return null;
+  if(S.subject){ const w=heldOf(S.subject); if(w) return w.p; S.subject=null; }
+  return arrival();
+}
+const isHeld=p=>!!(p&&heldOf(p.id));
+/* how far past their booking this party still has no table */
+const lateBy=p=>Math.max(0,S.clock-p.time);
 function taken(){
   const o={}; F.tables.forEach(t=>o[t.id]=[]);
   Object.entries(S.seats).forEach(([pid,a])=>a.tables.forEach(t=>o[t]&&o[t].push(a)));
@@ -483,41 +502,72 @@ function seatNow(){
   const p=cur(), o=match(S.pending); if(!p||!o||o.seats<p.party) return;
   const bk=taken();
   if(!o.tables.every(t=>openAt(bk,t,S.clock))) return;
+  const held=isHeld(p);
   const paid=S.clock+p.dine, free=paid+F.reset;
   S.seats[p.id]={tables:o.tables.slice(),start:S.clock,paid,free,party:p.party,src:p};
   S.log.push({p,action:"seat",tables:o.tables.slice(),at:S.clock,dine:p.dine,
-              bar:o.bar,waited:S.waited||0});
-  S.pending=[]; step();
+              bar:o.bar,late:lateBy(p),held});
+  S.pending=[];
+  if(held){ S.waiting=S.waiting.filter(w=>w.p.id!==p.id); S.subject=null; settle(false); }
+  else { S.i++; settle(true); }
+}
+
+/* Hold at the door. The party stays on the list, the clock keeps running, and
+   you are shown exactly how late you are on them. */
+function hold(){
+  const p=cur(); if(!p) return;
+  if(isHeld(p)){ S.subject=null; return draw(); }      // already holding — just look away
+  S.waiting.push({p,since:S.clock});
+  S.log.push({p,action:"hold",at:S.clock,late:lateBy(p)});
+  S.pending=[]; S.i++; settle(true);
 }
 function pass(){
   const p=cur(); if(!p) return;
-  S.log.push({p,action:"pass",at:S.clock,had:fits(p,S.clock).length});
-  S.pending=[]; step();
+  const held=isHeld(p);
+  S.log.push({p,action:"pass",at:S.clock,had:fits(p,S.clock).length,late:lateBy(p)});
+  S.pending=[];
+  if(held){ S.waiting=S.waiting.filter(w=>w.p.id!==p.id); S.subject=null; settle(false); }
+  else { S.i++; settle(true); }
 }
-function step(){
-  S.i++;
-  const p=cur();
-  if(!p){ S.over="close"; return draw(); }
-  S.waited=0;
-  let t=p.time;
-  if(!fits(p,t).length){
-    /* nothing open this second — a party will stand there a few minutes while a
-       check clears, so look ahead before declaring the room full */
-    let found=null;
-    for(let k=t+5;k<=t+F.grace;k+=5) if(fits(p,k).length){ found=k; break; }
-    if(found!==null){ S.waited=found-t; t=found; }
-    else if(p.walkin){ S.clock=t; S.log.push({p,action:"pass",at:t,had:0,forced:true}); return step(); }
-    else if(N.mode==="quick"){ S.clock=t; S.over="full"; return draw(); }
-    else { /* standard: you lose the booking but the night carries on to close */
-      S.clock=t; S.missed.push({p,at:t}); return step(); }
-  }
-  S.clock=t; draw();
+/* anyone held past walkOut gives up and leaves */
+function checkWalkOuts(){
+  const gone=S.waiting.filter(w=>lateBy(w.p)>=F.walkOut);
+  if(!gone.length) return false;
+  gone.forEach(w=>{
+    S.missed.push({p:w.p,at:S.clock,late:lateBy(w.p)});
+    S.log.push({p:w.p,action:"walked-out",at:S.clock,late:lateBy(w.p)});
+  });
+  S.waiting=S.waiting.filter(w=>lateBy(w.p)<F.walkOut);
+  if(S.subject&&!heldOf(S.subject)) S.subject=null;
+  return true;
+}
+
+function settle(advance){
+  const nx=arrival();
+  if(advance&&nx) S.clock=Math.max(S.clock,nx.time);
+  /* book exhausted but parties still at the door: run the clock on so tables
+     free up, and let them walk out if they never do */
+  if(!nx&&S.waiting.length){
+    let guard=0;
+    while(guard++<400){
+      if(checkWalkOuts()&&(N.mode==="quick"||!S.waiting.length)) break;
+      if(!S.waiting.length) break;
+      if(S.waiting.some(w=>fits(w.p,S.clock).length)) break;
+      if(S.clock>=F.close){ checkWalkOuts(); break; }
+      S.clock+=5;
+    }
+  } else checkWalkOuts();
+
+  if(S.missed.length&&N.mode==="quick"&&S.log.some(l=>l.action==="walked-out"))
+    { S.over="walkout"; return draw(); }
+  if(!arrival()&&!S.waiting.length){ S.over="close"; return draw(); }
+  draw();
 }
 
 /* ═══════════════════════════ scoring ═══════════════════════════ */
 function grade(){
   const seated=S.log.filter(l=>l.action==="seat");
-  const nt={order:[],spread:[],bal:[],occ:[],walk:[]};
+  const nt={order:[],time:[],spread:[],bal:[],occ:[],walk:[]};
 
   /* fill order — how far past the best open table did you reach */
   let loss=0,max=0;
@@ -607,12 +657,32 @@ function grade(){
   const walkPct=wl.length?wE/wl.length:1;
   if(!wl.length) nt.walk.push({k:"good",t:"No walk-ins reached the stand."});
 
+  /* door timing — how late you ran on the parties you held */
+  const booked=S.log.filter(l=>l.action==="seat"&&!l.p.walkin);
+  let tE=0;
+  booked.forEach(l=>{
+    const d=l.late||0;
+    tE += d<=5?1 : d<=15?.8 : d<=30?.5 : .2;
+    if(d>30) nt.time.push({k:"bad",t:`<b>${esc(l.p.name)}</b> sat ${d} minutes past their booking.`});
+    else if(d>15) nt.time.push({k:"warn",t:`<b>${esc(l.p.name)}</b> ran ${d} minutes late.`});
+  });
+  S.log.filter(l=>l.action==="walked-out").forEach(l=>
+    nt.time.push({k:"bad",t:`<b>${esc(l.p.name)}</b> (${l.p.party}) waited ${l.late} minutes and walked out.`}));
+  /* a party that gave up and left counts against you far harder than a late
+     seat — it is the one outcome you cannot apologise your way out of */
+  const walked=S.log.filter(l=>l.action==="walked-out").length;
+  const denom=booked.length+walked;
+  const timePct=denom?clamp((tE-1.5*walked)/denom,0,1):1;
+  const worst=Math.max(0,...booked.map(l=>l.late||0));
+  if(timePct>=.9) nt.time.push({k:"good",t:`Everyone sat close to their booking${worst?` — worst was ${worst} minutes`:""}.`});
+
   const dims=[
-    {name:"Fill order",   w:30,pct:orderPct, notes:nt.order},
-    {name:"Spread",       w:20,pct:spreadPct,notes:nt.spread},
-    {name:"Server balance",w:20,pct:balPct,  notes:nt.bal},
-    {name:"Occasions",    w:15,pct:occPct,   notes:nt.occ},
-    {name:"Walk-ins",     w:15,pct:walkPct,  notes:nt.walk}
+    {name:"Fill order",   w:26,pct:orderPct, notes:nt.order},
+    {name:"Door timing",  w:16,pct:timePct,  notes:nt.time},
+    {name:"Spread",       w:17,pct:spreadPct,notes:nt.spread},
+    {name:"Server balance",w:16,pct:balPct,  notes:nt.bal},
+    {name:"Occasions",    w:13,pct:occPct,   notes:nt.occ},
+    {name:"Walk-ins",     w:12,pct:walkPct,  notes:nt.walk}
   ];
   const quality=sum(dims.map(d=>d.w*d.pct));
   const reached=S.over==="close"?1:clamp((S.clock-F.open)/(F.last-F.open),0,1);
@@ -620,8 +690,9 @@ function grade(){
   const missFrac=bookings?S.missed.length/bookings:0;
   /* Quick ends on the jam, so how far you got IS the score. Standard always runs
      to close, so what costs you there is the bookings you could not seat. */
-  const total=Math.round(N.mode==="quick"
-    ? quality*(0.62+0.38*reached)
+  const total=Math.round(
+      S.over==="ended" ? quality                       // stopped on purpose — judge the calls only
+    : N.mode==="quick" ? quality*(0.62+0.38*reached)
     : quality*(1-0.55*missFrac));
   const g=total>=93?"A":total>=87?"A−":total>=82?"B+":total>=76?"B":total>=70?"B−":
           total>=64?"C+":total>=57?"C":total>=50?"C−":total>=40?"D":"F";
@@ -656,13 +727,24 @@ function rail(){
   }
   const hidden=N.queue.length-S.i-vis.length;
   document.getElementById("railN").textContent=
-    S.over?`${Object.keys(S.seats).length} seated`:`${vis.length} showing`;
+    S.over?`${Object.keys(S.seats).length} seated`
+    :S.waiting.length?`${S.waiting.length} held · ${vis.length} coming`
+    :`${vis.length} showing`;
   document.getElementById("railSub").innerHTML=S.over
     ? `Service over &middot; ${sum(Object.values(S.seats).map(a=>a.party))} covers seated`
     : `Next ${F.lookaheadMin} min &middot; max ${F.lookaheadMax} &middot; ${N.mode==="quick"?"ends when full":"runs to close"}`;
+  /* anyone you are holding, worst wait first — tap one to seat them */
+  const door=S.waiting.slice().sort((a,b)=>lateBy(b.p)-lateBy(a.p)).map(w=>{
+    const late=lateBy(w.p), hot=late>=F.walkOut-15;
+    return `<button class="qrow door ${hot?"over":""} ${S.subject===w.p.id?"subj":""}" data-w="${w.p.id}">
+      <span class="pax mono">${w.p.party}</span>
+      <span><span class="t mono">${w.p.walkin?"walk-in":"booked "+fmt(w.p.time)}</span>
+        <span class="nm">${esc(w.p.name)}</span></span>
+      <span class="wt">${late}m late</span></button>`;}).join("");
   document.getElementById("queue").innerHTML=
-    (vis.length?vis.map(({q,k})=>`
-      <div class="qrow ${k===S.i&&!S.over?"now":""} ${q.walkin?"walkin":""}">
+    (door?door+`<div class="rail-split">Coming in</div>`:"")
+    +(vis.length?vis.map(({q,k})=>`
+      <div class="qrow ${k===S.i&&!S.over&&!S.subject?"now":""} ${q.walkin?"walkin":""}">
         <span class="pax mono">${q.party}</span>
         <span><span class="t mono">${q.walkin?"walk-in":fmt(q.time)}</span>
           <span class="nm">${esc(q.name)}</span></span>
@@ -672,6 +754,8 @@ function rail(){
       </div>`).join("")
       :`<div class="qveil" style="border:0">Nothing else booked.</div>`)
     +(hidden>0?`<div class="qveil">${hidden} more later tonight — you will see them 30 minutes out</div>`:"");
+  document.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{
+    S.subject=b.dataset.w; S.pending=[]; draw(); });
 
   const b=busyTables();
   document.getElementById("gTxt").textContent=b;
@@ -769,7 +853,8 @@ function ask(){
     <div>
       <div class="who">
         <span class="clock mono">${p.walkin?"AT THE DOOR":fmt(p.time)}</span>
-        ${S.waited?`<span class="chip walk">WAITED ${S.waited}m</span>`:""}
+        ${lateBy(p)?`<span class="chip" style="color:${lateBy(p)>=F.walkOut-15?"var(--bad)":"var(--sq)"}">${lateBy(p)}m LATE</span>`:""}
+        ${isHeld(p)?`<span class="chip" style="color:var(--sq)">HOLDING</span>`:""}
         <span class="nm">${esc(p.name)}</span>
         <span class="pax">party of ${p.party}</span>
         ${p.walkin?`<span class="chip walk">WALK-IN</span>`:""}
@@ -778,32 +863,43 @@ function ask(){
       </div>
       <p class="stem">${S.pending.length
         ? `Holding <b class="mono">${S.pending.join(" + ")}</b> — ${seats} seat${seats>1?"s":""} for ${p.party}. ${held?"":"Add the next table along."}`
-        : `Where are you seating them? <em>Tap a table.</em>`}</p>
+        : f.length ? `Where are you seating them? <em>Tap a table.</em>`
+        : isHeld(p)
+          ? `Still nothing that takes ${p.party}. They keep waiting — <b>${F.walkOut-lateBy(p)} minutes</b> before they give up and leave. Seat someone else, or come back the moment a check clears.`
+          : `Nothing on the floor takes ${p.party} right now. <em>Hold them at the door</em> and seat them the moment a check clears.`}</p>
     </div>
     <div class="acts">
       <span class="held">${new Set(f.flatMap(o=>o.tables)).size} table${new Set(f.flatMap(o=>o.tables)).size===1?"":"s"} open</span>
       ${S.pending.length?`<button class="btn" id="aClear">Clear</button>`:""}
       ${held&&held.seats>=p.party?`<button class="btn go" id="aSeat">Seat at ${S.pending.join("+")}</button>`:""}
+      ${isHeld(p)
+        ? `<button class="btn" id="aBack">Leave them holding</button>`
+        : `<button class="btn" id="aHold">Hold at the door</button>`}
       ${p.walkin?`<button class="btn no" id="aPass">No room</button>`:""}
     </div></div>`;
   const b=id=>document.getElementById(id);
   if(b("aClear")) b("aClear").onclick=()=>{S.pending=[];draw();};
   if(b("aSeat")) b("aSeat").onclick=seatNow;
   if(b("aPass")) b("aPass").onclick=pass;
+  if(b("aHold")) b("aHold").onclick=hold;
+  if(b("aBack")) b("aBack").onclick=()=>{S.subject=null;S.pending=[];draw();};
 }
 
 function result(el){
   const R=grade();
   const tone=x=>x>=.85?"var(--ok)":x>=.6?"var(--sq)":"var(--bad)";
   const miss=S.missed.length;
-  const headline=S.over==="full"
-    ? `Room filled at ${fmt(S.clock)}`
+  const gone=S.log.filter(l=>l.action==="walked-out");
+  const headline=
+      S.over==="ended"   ? `Stopped at ${fmt(S.clock)}`
+    : S.over==="walkout" ? `Room jammed at ${fmt(S.clock)}`
     : miss ? `Closed with ${miss} booking${miss>1?"s":""} lost`
            : `Closed with every booking seated`;
-  const sub=S.over==="full"
-    ? `The next booking had nowhere to go. ${R.parties} parties and ${R.covers} covers down before it jammed.`
-    : `${R.parties} parties, ${R.covers} covers.${miss?` Nowhere to go: `
-        +S.missed.slice(0,4).map(m=>esc(m.p.name)+" ("+m.p.party+") "+fmt(m.at)).join(", ")
+  const sub=
+      S.over==="ended"   ? `Your seating calls up to here, scored on their own — ${R.parties} parties, ${R.covers} covers down.`
+    : S.over==="walkout" ? `${esc(gone[0].p.name)}'s ${gone[0].p.party}-top waited ${gone[0].late} minutes and left. ${R.parties} parties and ${R.covers} covers seated first.`
+    : `${R.parties} parties, ${R.covers} covers.${miss?` Lost: `
+        +S.missed.slice(0,4).map(m=>esc(m.p.name)+" ("+m.p.party+")").join(", ")
         +(miss>4?" and "+(miss-4)+" more.":"."):""}`;
   el.innerHTML=`<div class="result">
     <div class="res-top">
@@ -831,13 +927,16 @@ function start(seed,type,mode){
   N=build(seed!=null?seed:Math.floor(Math.random()*9000)+1000, type||"mid", MODE);
   reset();
   const p=cur(); if(p) S.clock=p.time;
-  if(p&&!fits(p,S.clock).length) return start(null,type,MODE);   // unplayable — reroll
   draw();
 }
 document.querySelectorAll("[data-ty]").forEach(b=>b.onclick=()=>start(null,b.dataset.ty));
 document.querySelectorAll("[data-md]").forEach(b=>b.onclick=()=>start(null,N.type,b.dataset.md));
 document.getElementById("nextN").onclick=()=>start(null,N.type);
 document.getElementById("prevN").onclick=()=>start(null,N.type);
+document.getElementById("endBtn").onclick=()=>{
+  if(S.over) return;
+  S.over="ended"; S.subject=null; S.pending=[]; draw();
+};
 document.getElementById("seedBtn").onclick=()=>{
   const v=prompt("Night number — same number gives every trainee the same room:",N.seed);
   if(v&&!isNaN(+v)) start(Math.floor(+v),N.type);
