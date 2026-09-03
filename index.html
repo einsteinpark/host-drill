@@ -90,7 +90,16 @@ h1,h2{margin:0;font-weight:600}
 .chip.occ{color:var(--occ)} .chip.walk{color:var(--s2)} .chip.vip{color:var(--sel)}
 .qveil{padding:11px 13px;font-size:11.5px;color:var(--faint);text-align:center;
   border-top:1px dashed var(--line);margin:4px 6px 0}
-.gauge{padding:10px 13px;border-top:1px solid var(--line);background:#292E37}
+.gauge{padding:10px 13px;border-top:1px solid var(--line);background:#292E37;
+  display:flex;flex-direction:column;gap:9px}
+.rot{display:flex;gap:6px;flex-wrap:wrap}
+.rotc{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:var(--r);
+  background:var(--row);border:1px solid var(--line);font-size:11.5px;flex:1;min-width:118px}
+.rotc i{width:9px;height:9px;border-radius:2px;flex:none}
+.rotc .nm{font-weight:600;color:var(--ink-2);white-space:nowrap}
+.rotc .ct{margin-left:auto;color:var(--mute);white-space:nowrap;font-weight:600}
+.rotc.up{border-color:var(--ok);background:#26362C}
+.rotc.up .nm{color:var(--ok)}
 .gauge .lab{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-bottom:5px}
 .gauge .lab b{color:var(--ink);font-weight:600}
 .gbar{height:7px;border-radius:4px;background:#3A404C;overflow:hidden}
@@ -177,9 +186,11 @@ svg.floor{display:block;width:100%;height:auto;flex:none}
   .qrow{flex:none;width:190px;margin:0}
   .qveil{flex:none;width:170px;margin:0;padding:8px 10px;border-top:0;
     border-left:1px dashed var(--line);display:flex;align-items:center;text-align:left}
-  .gauge{display:flex;align-items:center;gap:12px;padding:7px 12px}
-  .gauge .lab{margin:0;flex:none;gap:10px}
-  .gbar{flex:1}
+  .gauge{flex-direction:row;align-items:center;gap:10px;padding:7px 12px;flex-wrap:wrap}
+  .gauge>div:last-child{flex:1;min-width:150px}
+  .gauge .lab{margin:0 0 4px}
+  .rot{flex:none}
+  .rotc{flex:none;min-width:0}
   .legend{font-size:12px;gap:12px;padding:6px 14px 10px}
   .chrome{flex-wrap:wrap;row-gap:7px;padding:8px 12px}
   .chrome .brand{width:auto}
@@ -230,8 +241,11 @@ svg.floor{display:block;width:100%;height:auto;flex:none}
       <div class="rail-sub" id="railSub"></div>
       <div class="queue" id="queue"></div>
       <div class="gauge">
-        <div class="lab"><span>Room</span><span><b id="gTxt">0</b> of 23 tables</span></div>
-        <div class="gbar"><i id="gBar" style="width:0%"></i></div>
+        <div class="rot" id="rot"></div>
+        <div>
+          <div class="lab"><span>Room</span><span><b id="gTxt">0</b> of 23 tables</span></div>
+          <div class="gbar"><i id="gBar" style="width:0%"></i></div>
+        </div>
       </div>
     </aside>
 
@@ -485,6 +499,20 @@ function niceness(o,party){
   if((t.id==="15"||t.id==="25")&&party>=3) return 1;
   return 0;
 }
+/* Rotation: tables and covers each server has taken, and who is due next.
+   Whoever has the fewest tables is up; ties go to whoever sat longest ago. */
+function rotation(){
+  const floors=N.secDefs.filter(x=>x.key!=="sB");
+  const rows=floors.map(sec=>{
+    const mine=Object.values(S.seats).filter(a=>N.section[a.tables[0]]===sec.key);
+    return {sec,n:mine.length,cov:sum(mine.map(a=>a.party)),
+            last:mine.length?Math.max(...mine.map(a=>a.start)):null};
+  });
+  let up=null;
+  rows.forEach(r=>{ if(!up||r.n<up.n||(r.n===up.n&&(r.last??-1)<(up.last??-1))) up=r; });
+  rows.forEach(r=>r.up=(r===up));
+  return rows;
+}
 const busyTables=()=>{const bk=taken();
   return DINING.filter(id=>!openAt(bk,id,S.clock)).length;};
 
@@ -581,23 +609,25 @@ function grade(){
       &&o.tables.every(t=>(before[t]||[]).every(b=>l.at>=b.free)));
     if(!open.length||!chosen) return;
     open.sort((x,y)=>x.rank-y.rank);
-    max+=6;
+    /* Loose on purpose: the first two better tables you pass cost nothing —
+       there is usually more than one right answer — and it caps out at four. */
+    max+=4;
     const idx=open.findIndex(o=>o.key===chosen.key);
-    loss+=idx<0?6:Math.min(6,idx);
-    if(idx>=5) nt.order.push({k:"warn",t:`<b>${esc(p.name)}</b> ${fmt(l.at)} — you passed <span class="mono">${open[0].key}</span> to take <span class="mono">${chosen.key}</span>.`});
+    loss+=idx<0?4:clamp(idx-2,0,4);
+    if(idx>=7) nt.order.push({k:"warn",t:`<b>${esc(p.name)}</b> ${fmt(l.at)} — you reached past <span class="mono">${open[0].key}</span> and <span class="mono">${open[1].key}</span> to take <span class="mono">${chosen.key}</span>.`});
     if(l.tables.some(t=>T[t].zone==="50s")){
       const better=open.find(o=>!o.tables.some(t=>T[t].zone==="50s")&&!o.bar);
-      if(better){ loss+=3; max+=3;
+      if(better){ loss+=2; max+=2;
         nt.order.push({k:"bad",t:`<b>${esc(p.name)}</b> went to <span class="mono">${l.tables.join("+")}</span> at the door with <span class="mono">${better.key}</span> open.`});}
     }
     if(p.party<=2&&l.tables.length===1&&["15","25"].includes(l.tables[0])){
       const two=open.find(o=>o.seats===2&&!o.bar);
-      if(two){ loss+=3; max+=3;
+      if(two){ loss+=2; max+=2;
         nt.order.push({k:"warn",t:`A deuce on <span class="mono">${l.tables[0]}</span> — that is a four-top and half of your ${l.tables[0]==="15"?"15/16":"25/26"} seven.`});}
     }
   });
   const orderPct=max?1-loss/max:1;
-  if(orderPct>=.85) nt.order.push({k:"good",t:"You worked the order — the visible tables filled first and the door stayed quiet."});
+  if(orderPct>=.80) nt.order.push({k:"good",t:"You worked the order — the visible tables filled first and the door stayed quiet."});
 
   /* spread — no two neighbours started together while somewhere else was open */
   let hits=0;
@@ -677,10 +707,10 @@ function grade(){
   if(timePct>=.9) nt.time.push({k:"good",t:`Everyone sat close to their booking${worst?` — worst was ${worst} minutes`:""}.`});
 
   const dims=[
-    {name:"Fill order",   w:26,pct:orderPct, notes:nt.order},
+    {name:"Fill order",   w:24,pct:orderPct, notes:nt.order},
     {name:"Door timing",  w:16,pct:timePct,  notes:nt.time},
     {name:"Spread",       w:17,pct:spreadPct,notes:nt.spread},
-    {name:"Server balance",w:16,pct:balPct,  notes:nt.bal},
+    {name:"Server balance",w:18,pct:balPct,  notes:nt.bal},
     {name:"Occasions",    w:13,pct:occPct,   notes:nt.occ},
     {name:"Walk-ins",     w:12,pct:walkPct,  notes:nt.walk}
   ];
@@ -757,6 +787,13 @@ function rail(){
   document.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{
     S.subject=b.dataset.w; S.pending=[]; draw(); });
 
+  document.getElementById("rot").innerHTML=rotation().map(r=>`
+    <div class="rotc ${r.up&&!S.over?"up":""}">
+      <i style="background:${FILL[r.sec.key]}"></i>
+      <span class="nm">${r.sec.name.replace("Server ","S")}${r.up&&!S.over?" · up":""}</span>
+      <span class="ct">${r.n} tbl · ${r.cov}</span>
+    </div>`).join("");
+
   const b=busyTables();
   document.getElementById("gTxt").textContent=b;
   const pc=Math.round(100*b/DINING.length);
@@ -807,7 +844,9 @@ function floor(){
       fill="var(--paid)"; ink="var(--paid-ink)"; dim=true;
       when=(st.b.free-S.clock)+"m"; }
     else if(p&&!S.over&&!fitsT.has(t.id)){ fill="var(--tbl-dim)"; ink="var(--tbl-dim-ink)"; dim=true; }
-    if(picked){ ring=`stroke="var(--sel)" stroke-width="3"`; }
+    /* the section colour is on the outline at all times, so you can see whose
+       station an OPEN table belongs to — not just an occupied one */
+    const edge=FILL[sec]||"var(--line)";
 
     const label=`<text class="num" x="${t.x}" y="${t.y+(when?-2:5)}" fill="${ink}">${t.id}</text>`
       +(when?`<text class="when" x="${t.x}" y="${t.y+12}" fill="${ink}" opacity=".85">${when}</text>`:"");
@@ -816,15 +855,19 @@ function floor(){
       g+=`<g class="tbl ${dim?"off":""}" data-t="${t.id}" tabindex="0" role="button"
            aria-label="Bar seat ${t.id}${st.s==="open"?"":", "+st.s}">
         <circle class="hit" cx="${t.x}" cy="${t.y}" r="${t.r+2}"/>
-        <circle class="body" cx="${t.x}" cy="${t.y}" r="${t.r}" fill="${fill}" ${ring}/>
+        ${picked?`<circle cx="${t.x}" cy="${t.y}" r="${t.r+4}" fill="none" stroke="var(--sel)" stroke-width="3"/>`:""}
+        <circle class="body" cx="${t.x}" cy="${t.y}" r="${t.r}" fill="${fill}"
+          stroke="${edge}" stroke-width="2" stroke-opacity="${dim?.45:1}"/>
         <text class="num" style="font-size:11px" x="${t.x}" y="${t.y+4}" fill="${ink}">${t.id}</text></g>`;
     } else {
       g+=`<g class="tbl ${dim?"off":""}" data-t="${t.id}" tabindex="0" role="button"
            aria-label="Table ${t.id}, seats ${t.seats}${st.s==="open"?"":", "+st.s}">
         <rect class="hit" x="${t.x-t.w/2-3}" y="${t.y-t.h/2-6}" width="${t.w+6}" height="${t.h+12}"/>
+        ${picked?`<rect x="${t.x-t.w/2-4}" y="${t.y-t.h/2-4}" width="${t.w+8}" height="${t.h+8}"
+          rx="7" fill="none" stroke="var(--sel)" stroke-width="3"/>`:""}
         ${chairs(t,dim||st.s==="dining")}
         <rect class="body" x="${t.x-t.w/2}" y="${t.y-t.h/2}" width="${t.w}" height="${t.h}"
-          rx="4" fill="${fill}" ${ring}/>
+          rx="4" fill="${fill}" stroke="${edge}" stroke-width="3" stroke-opacity="${dim?.4:1}"/>
         ${label}</g>`;
     }
   });
@@ -836,7 +879,7 @@ function floor(){
 
   document.getElementById("legend").innerHTML=
     N.secDefs.map(s=>`<span><i style="background:${FILL[s.key]}"></i>${s.name}${s.key==="sB"?" (bar + 50s)":""}</span>`).join("")
-    +`<span><i style="background:var(--tbl)"></i>Open</span>
+    +`<span><i style="background:var(--tbl);border:2px solid var(--ink-2)"></i>Open &middot; outline is whose station</span>
       <span><i style="background:var(--paid)"></i>Check paid &middot; back in ${F.reset}m</span>
       <span style="margin-left:auto">Fill order <span class="mono">${PRIORITY.slice(0,7).join(" ")}…</span></span>`;
 }
