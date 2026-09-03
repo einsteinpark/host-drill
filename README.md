@@ -37,6 +37,11 @@ Everything tunable sits in one `F` object at the top of `index.html`:
   3: 75–120, 4: 90–120, 5–6: 90–150, 7+: 120–180, then 15 minutes to reset.
   **This is the one input the export could not give us** — it has no departure
   time — so these are set to match the room's observed throughput.
+- `nights` — the volume tiers, set from how the room actually feels rather
+  than the raw spread of the book: **slow 60-80 covers, mid 80-110, busy 110+**
+  (capped at 220, which is what August's biggest nights ran). Walk-ins count
+  inside the tier, not on top of it. Across August those thresholds split the
+  month 2 slow / 8 mid / 19 busy, median night 135.
 - `lookaheadMin` / `lookaheadMax` — 30 minutes and 10 parties. The single dial
   that sets difficulty.
 - `tables`, `combos`, `sections` — the room itself.
