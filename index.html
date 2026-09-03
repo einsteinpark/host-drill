@@ -151,7 +151,7 @@ svg.floor{display:block;width:100%;height:auto;flex:none}
 .res-top .g{font-size:38px;font-weight:700;letter-spacing:-.03em;line-height:1}
 .res-top .hl{font-size:15px;font-weight:600}
 .res-top .sub{font-size:12.5px;color:var(--mute)}
-.dims{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:11px;margin-bottom:12px}
+.dims{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
 .dim .r{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:4px}
 .dim .r b{font-weight:600}
 .dim .r span{color:var(--faint)}
@@ -230,8 +230,9 @@ svg.floor{display:block;width:100%;height:auto;flex:none}
       <button data-ty="mid" aria-pressed="true">Mid</button>
       <button data-ty="busy" aria-pressed="false">Busy</button>
     </div>
-    <button class="iconbtn" id="endBtn" style="width:auto;padding:0 11px;font-size:11.5px;font-weight:600"
-      title="Stop here and score what you have done so far">End &amp; score</button>
+    <button class="iconbtn" id="endBtn"
+      style="width:auto;padding:0 13px;font-size:12px;font-weight:700;color:var(--ink);border-color:var(--mute)"
+      title="Stop the night here and score every call you have made so far">End night &amp; score</button>
     <button class="iconbtn mono" id="seedBtn" title="Same number, same night — give every trainee the same room" style="width:auto;padding:0 9px;font-size:11.5px">#0000</button>
   </header>
 
@@ -595,39 +596,71 @@ function settle(advance){
 /* ═══════════════════════════ scoring ═══════════════════════════ */
 function grade(){
   const seated=S.log.filter(l=>l.action==="seat");
-  const nt={order:[],time:[],spread:[],bal:[],occ:[],walk:[]};
+  const nt={back:[],spread:[],vis:[],time:[],bal:[],occ:[],walk:[]};
 
-  /* fill order — how far past the best open table did you reach */
-  let loss=0,max=0;
-  seated.forEach(l=>{
-    const p=l.p, chosen=match(l.tables);
-    /* rebuild what was actually open at that instant from the earlier seatings */
+  /* what the room looked like the instant each party went down */
+  const snapshot=l=>{
     const before={}; F.tables.forEach(t=>before[t.id]=[]);
     seated.forEach(o2=>{ if(o2.at<l.at){const a2=S.seats[o2.p.id];
       a2.tables.forEach(t=>before[t].push(a2));} });
-    const open=OPTS.filter(o=>o.seats>=p.party&&reasonable(o,p.party)
+    const open=OPTS.filter(o=>o.seats>=l.p.party&&reasonable(o,l.p.party)
       &&o.tables.every(t=>(before[t]||[]).every(b=>l.at>=b.free)));
-    if(!open.length||!chosen) return;
-    open.sort((x,y)=>x.rank-y.rank);
-    /* Loose on purpose: the first two better tables you pass cost nothing —
-       there is usually more than one right answer — and it caps out at four. */
-    max+=4;
-    const idx=open.findIndex(o=>o.key===chosen.key);
-    loss+=idx<0?4:clamp(idx-2,0,4);
-    if(idx>=7) nt.order.push({k:"warn",t:`<b>${esc(p.name)}</b> ${fmt(l.at)} — you reached past <span class="mono">${open[0].key}</span> and <span class="mono">${open[1].key}</span> to take <span class="mono">${chosen.key}</span>.`});
-    if(l.tables.some(t=>T[t].zone==="50s")){
-      const better=open.find(o=>!o.tables.some(t=>T[t].zone==="50s")&&!o.bar);
-      if(better){ loss+=2; max+=2;
-        nt.order.push({k:"bad",t:`<b>${esc(p.name)}</b> went to <span class="mono">${l.tables.join("+")}</span> at the door with <span class="mono">${better.key}</span> open.`});}
-    }
-    if(p.party<=2&&l.tables.length===1&&["15","25"].includes(l.tables[0])){
-      const two=open.find(o=>o.seats===2&&!o.bar);
-      if(two){ loss+=2; max+=2;
-        nt.order.push({k:"warn",t:`A deuce on <span class="mono">${l.tables[0]}</span> — that is a four-top and half of your ${l.tables[0]==="15"?"15/16":"25/26"} seven.`});}
+    const taken=DINING.filter(id=>!(before[id]||[]).every(b=>l.at>=b.free)).length;
+    return {before,open,taken,full:taken/DINING.length};
+  };
+
+  /* ── 1. the 50s ──
+     Sat by the door and least wanted. Using one is only a mistake when
+     something else of the right size was genuinely free. */
+  let backBad=0, backUsed=0;
+  seated.forEach(l=>{
+    if(!l.tables.some(t=>T[t].zone==="50s")) return;
+    backUsed++;
+    const {open}=snapshot(l);
+    const better=open.find(o=>!o.tables.some(t=>T[t].zone==="50s")&&!o.bar);
+    if(better){ backBad++;
+      nt.back.push({k:"bad",t:`<b>${esc(l.p.name)}</b> went to <span class="mono">${l.tables.join("+")}</span>, right at the door, with <span class="mono">${better.key}</span> open.`});
+    } else {
+      const deeper=["51","52","53"].find(id=>RANK[id]<RANK[l.tables[0]]
+        && open.some(o=>o.key===id));
+      if(deeper){ backBad+=.5;
+        nt.back.push({k:"warn",t:`<span class="mono">${l.tables.join("+")}</span> before <span class="mono">${deeper}</span> — work the 50s from the room outwards.`});
+      } else nt.back.push({k:"good",t:`<b>${esc(l.p.name)}</b> on <span class="mono">${l.tables.join("+")}</span> — room had nothing else. That is what the 50s are for.`});
     }
   });
-  const orderPct=max?1-loss/max:1;
-  if(orderPct>=.80) nt.order.push({k:"good",t:"You worked the order — the visible tables filled first and the door stayed quiet."});
+  const backPct=clamp(1-backBad/Math.max(3,Math.round(seated.length*0.10)),0,1);
+  if(!backUsed) nt.back.push({k:"good",t:"You never touched the 50s. The door tables stayed empty all night."});
+  else if(!backBad) nt.back.push({k:"good",t:`Used the 50s ${backUsed} time${backUsed>1?"s":""}, every one of them because the room needed it.`});
+
+  /* ── 2. working the visible middle ──
+     The 30s/40s read first from the door, so they fill first — but only when
+     you actually have the choice. Going to the banquettes is completely fine
+     on a full room, or when you are holding the middle for a party you can
+     see coming in the next half hour. */
+  let visBad=0, visCould=0;
+  seated.forEach(l=>{
+    if(l.p.walkin) return;
+    const banq=l.tables.every(t=>["10s","20s"].includes(T[t].zone));
+    if(!banq) return;
+    const {open,full}=snapshot(l);
+    const mid=open.find(o=>o.tables.every(t=>["30s","40s"].includes(T[t].zone)));
+    if(!mid) return;
+    if(full>=.45) return;                                   // really busy — your call
+    const bigSoon=N.queue.some(q=>q.party>=5&&q.time>=l.at&&q.time<=l.at+F.lookaheadMin);
+    if(bigSoon) return;                                     // saving the middle — correct
+    visCould++; visBad++;
+    nt.vis.push({k:"warn",t:`<b>${esc(l.p.name)}</b> ${fmt(l.at)} on <span class="mono">${l.tables.join("+")}</span> with <span class="mono">${mid.key}</span> open and the room only ${Math.round(full*100)}% full.`});
+  });
+  const visPct=clamp(1-visBad/Math.max(3,Math.round(seated.length*0.20)),0,1);
+  if(!visBad) nt.vis.push({k:"good",t:"The middle block filled first while you had the room to do it — the place reads busy from the door."});
+  /* the within-zone order is coaching only, it costs nothing */
+  seated.slice(0,60).forEach(l=>{
+    if(l.p.party>2||l.tables.length>1) return;
+    if(!["15","25"].includes(l.tables[0])) return;
+    const {open}=snapshot(l);
+    if(open.some(o=>o.seats===2&&!o.bar))
+      nt.vis.push({k:"warn",t:`A deuce on <span class="mono">${l.tables[0]}</span> — that is a four-top and half of your ${l.tables[0]==="15"?"15/16":"25/26"} seven.`});
+  });
 
   /* spread — no two neighbours started together while somewhere else was open */
   let hits=0;
@@ -641,7 +674,7 @@ function grade(){
       nt.spread.push({k:"bad",t:`<span class="mono">${t}</span> and <span class="mono">${nb}</span> both sat around ${fmt(l.at)} — shoulder to shoulder.`});
     }));
   });
-  const spreadPct=clamp(1-hits/Math.max(2,Math.round(seated.length*.28)),0,1);
+  const spreadPct=clamp(1-hits/Math.max(2,Math.round(seated.length*.20)),0,1);
   if(!hits) nt.spread.push({k:"good",t:"Nothing double-seated. Guests got air on both sides."});
 
   /* balance — each section against its own fair share of the room */
@@ -654,9 +687,11 @@ function grade(){
   const per=floors.map((s,i)=>{const c=sum(mine(s).map(l=>l.p.party));
     return {s,c,fair:caps[i]/capT,target:Math.round(caps[i]/capT*totC),n:mine(s).length};});
   const dev=per.map(p=>Math.abs(p.c/totC-p.fair)/p.fair);
-  const balPct=floors.length<2?1:clamp(1-(sum(dev)/dev.length)/.30,0,1);
-  per.forEach(p=>nt.bal.push({k:Math.abs(p.c-p.target)>Math.max(6,p.target*.18)?"warn":"good",
+  const balPct=floors.length<2?1:clamp(1-(sum(dev)/dev.length)/.45,0,1);
+  per.forEach(p=>nt.bal.push({k:Math.abs(p.c-p.target)>Math.max(8,p.target*.25)?"warn":"good",
     t:`<b>${p.s.name}</b> — ${p.c} covers over ${p.n} tables. Fair share is ${p.target}.`}));
+  const bigP=seated.filter(l=>l.p.party>=6).length;
+  if(bigP&&balPct<.9) nt.bal.push({k:"good",t:`${bigP} large part${bigP>1?"ies":"y"} tonight — they land in one section and skew it. Not much you can do about that.`});
   if(N.servers===1) nt.bal.push({k:"good",t:"One server up, so balance comes free tonight."});
 
   /* occasions */
@@ -707,12 +742,13 @@ function grade(){
   if(timePct>=.9) nt.time.push({k:"good",t:`Everyone sat close to their booking${worst?` — worst was ${worst} minutes`:""}.`});
 
   const dims=[
-    {name:"Fill order",   w:24,pct:orderPct, notes:nt.order},
-    {name:"Door timing",  w:16,pct:timePct,  notes:nt.time},
-    {name:"Spread",       w:17,pct:spreadPct,notes:nt.spread},
-    {name:"Server balance",w:18,pct:balPct,  notes:nt.bal},
-    {name:"Occasions",    w:13,pct:occPct,   notes:nt.occ},
-    {name:"Walk-ins",     w:12,pct:walkPct,  notes:nt.walk}
+    {name:"No double-seating", w:18,pct:spreadPct,notes:nt.spread},
+    {name:"Holding the 50s",   w:16,pct:backPct,  notes:nt.back},
+    {name:"Door timing",       w:16,pct:timePct,  notes:nt.time},
+    {name:"Visible tables first",w:14,pct:visPct, notes:nt.vis},
+    {name:"Server balance",    w:12,pct:balPct,   notes:nt.bal},
+    {name:"Occasions",         w:12,pct:occPct,   notes:nt.occ},
+    {name:"Walk-ins",          w:12,pct:walkPct,  notes:nt.walk}
   ];
   const quality=sum(dims.map(d=>d.w*d.pct));
   const reached=S.over==="close"?1:clamp((S.clock-F.open)/(F.last-F.open),0,1);
