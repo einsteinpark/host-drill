@@ -1,0 +1,1808 @@
+<title>Fill the Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --bg:#EBECEE; --surface:#FCFCFD; --surface-2:#F3F4F6; --sunken:#E3E5E9;
+  --ink:#14171C; --ink-2:#3A414B; --muted:#606874; --faint:#8A929E;
+  --rule:#D3D7DD; --rule-strong:#B9BFC8;
+  --pick:#2C4CC4; --pick-soft:#DDE3F8;
+  --good:#2E6B52; --warn:#9A6516; --bad:#A83B2B;
+  --good-soft:#DCEAE2; --warn-soft:#F5E7CF; --bad-soft:#F5DED9;
+  --s1:#2F6F8F; --s1-soft:#DBE6ED;
+  --s2:#A2622F; --s2-soft:#F0E4D6;
+  --s3:#4E7A4A; --s3-soft:#DEE8DB;
+  --sB:#5A6472; --sB-soft:#E2E5EA;
+  --closed:#CFD3D9; --closed-ink:#9AA1AB;
+  /* door status — late, part-here, all here */
+  --late:#8A6A14;  --late-soft:#FBF1CB;  --late-line:#DDBF57;
+  --inc:#A33F76;   --inc-soft:#FBE3EF;   --inc-line:#E7A2C5;
+  --ready:#674099; --ready-soft:#ECE3F8; --ready-line:#B497DF;
+  --shadow:0 1px 2px rgba(20,23,28,.06), 0 6px 18px rgba(20,23,28,.06);
+  --r:7px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101318; --surface:#171B21; --surface-2:#1D222A; --sunken:#0B0E12;
+    --ink:#E4E7EC; --ink-2:#C0C7D0; --muted:#8A939F; --faint:#6B7480;
+    --rule:#2A303A; --rule-strong:#3B4351;
+    --pick:#7B93F0; --pick-soft:#1E2545;
+    --good:#6FBE97; --warn:#D9A85C; --bad:#E08170;
+    --good-soft:#172B22; --warn-soft:#2E2413; --bad-soft:#2E1A17;
+    --s1:#7FB8D4; --s1-soft:#1A252D;
+    --s2:#D9A473; --s2-soft:#2A211A;
+    --s3:#93BE8B; --s3-soft:#1B241A;
+    --sB:#9AA4B2; --sB-soft:#1C2027;
+    --closed:#232830; --closed-ink:#5C6470;
+    --late:#E2C468;  --late-soft:#2F2812;  --late-line:#6E5C23;
+    --inc:#F1A2C9;   --inc-soft:#2F1824;   --inc-line:#703C57;
+    --ready:#C5A8F1; --ready-soft:#231B34; --ready-line:#503C77;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101318; --surface:#171B21; --surface-2:#1D222A; --sunken:#0B0E12;
+  --ink:#E4E7EC; --ink-2:#C0C7D0; --muted:#8A939F; --faint:#6B7480;
+  --rule:#2A303A; --rule-strong:#3B4351;
+  --pick:#7B93F0; --pick-soft:#1E2545;
+  --good:#6FBE97; --warn:#D9A85C; --bad:#E08170;
+  --good-soft:#172B22; --warn-soft:#2E2413; --bad-soft:#2E1A17;
+  --s1:#7FB8D4; --s1-soft:#1A252D;
+  --s2:#D9A473; --s2-soft:#2A211A;
+  --s3:#93BE8B; --s3-soft:#1B241A;
+  --sB:#9AA4B2; --sB-soft:#1C2027;
+  --closed:#232830; --closed-ink:#5C6470;
+  --late:#E2C468;  --late-soft:#2F2812;  --late-line:#6E5C23;
+  --inc:#F1A2C9;   --inc-soft:#2F1824;   --inc-line:#703C57;
+  --ready:#C5A8F1; --ready-soft:#231B34; --ready-line:#503C77;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);
+  font-family:"Archivo","Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.45;margin:0;
+  -webkit-font-smoothing:antialiased}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:600;letter-spacing:-.01em}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--pick);outline-offset:2px}
+.lbl{font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+
+.wrap{max-width:1560px;margin:0 auto;padding:0 18px 64px}
+header.top{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--rule);
+  margin:0 -18px 16px;padding:14px 18px 0}
+.top-row{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;gap:1px;margin-right:auto}
+.brand h1{font-size:21px;font-weight:700;letter-spacing:-.02em}
+.brand .sub{font-size:12px;color:var(--muted)}
+
+.night-chip{display:flex;align-items:center;gap:9px;padding:6px 12px;border-radius:999px;
+  border:1px solid var(--rule-strong);background:var(--surface)}
+.night-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--ink)}
+.night-chip[data-t="slow"] .dot{background:var(--s3)}
+.night-chip[data-t="mid"] .dot{background:var(--s2)}
+.night-chip[data-t="busy"] .dot{background:var(--bad)}
+.night-chip b{font-weight:600}
+.night-chip span{color:var(--muted);font-size:12.5px}
+
+.btn{border:1px solid var(--rule-strong);background:var(--surface);border-radius:var(--r);
+  padding:7px 13px;font-weight:500;font-size:13px;transition:background .12s,border-color .12s}
+.btn:hover{background:var(--surface-2);border-color:var(--muted)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.btn.primary:hover{opacity:.87;background:var(--ink)}
+.btn.primary[disabled]{opacity:.35;cursor:not-allowed}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{background:var(--surface-2);color:var(--ink)}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn.sm{padding:4px 9px;font-size:11.5px}
+
+.seg{display:flex;border:1px solid var(--rule-strong);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:7px 11px;font-size:12.5px;font-weight:500;border-right:1px solid var(--rule)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);font-weight:600}
+
+.steps{display:flex;margin:14px 0 0;list-style:none;padding:0}
+.steps li{display:flex;align-items:baseline;gap:7px;padding:9px 16px 11px;border-bottom:2px solid transparent;
+  color:var(--faint);font-size:13px;font-weight:500}
+.steps li .n{font-size:11px;font-weight:600}
+.steps li[data-on="1"]{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+.steps li[data-done="1"]{color:var(--muted)}
+
+.board{display:grid;grid-template-columns:288px minmax(0,1fr) 296px;gap:14px;align-items:start}
+@media (max-width:1280px){.board{grid-template-columns:270px minmax(0,1fr)}.col-side{grid-column:1/-1}}
+@media (max-width:880px){.board{grid-template-columns:1fr}}
+
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow)}
+.card-hd{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--rule)}
+.card-hd h2{font-size:13px;font-weight:600}
+.card-hd .count{margin-left:auto;font-size:11.5px;color:var(--muted)}
+.card-bd{padding:11px 13px}
+
+.book{max-height:600px;overflow-y:auto;padding:5px}
+.res{display:grid;grid-template-columns:62px 1fr auto;gap:8px;align-items:center;
+  padding:6px 8px;border-radius:var(--r);border:1px solid transparent;width:100%;background:transparent;text-align:left}
+.res:hover{background:var(--surface-2)}
+.res[aria-selected="true"]{border-color:var(--pick);background:var(--pick-soft)}
+.res .t{font-size:12.5px;font-weight:600}
+.res .who{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.res .note{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.res .pax{font-size:11.5px;color:var(--muted)}
+.res .at{font-size:12px;font-weight:600;padding:2px 6px;border-radius:5px;background:var(--sunken);color:var(--ink-2)}
+.res .at.none{background:transparent;color:var(--faint);font-weight:500;border:1px dashed var(--rule-strong)}
+.tag{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;border-radius:3px;
+  padding:0 3px;vertical-align:1px;margin-right:3px;border:1px solid currentColor}
+.tag.bday{color:var(--s2)} .tag.vip{color:var(--pick)} .tag.date{color:var(--s3)}
+
+svg.floor{display:block;width:100%;height:auto;background:var(--surface)}
+.tbl{cursor:pointer}
+.tbl[data-state="off"]{cursor:not-allowed}
+.tbl text.id{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:15px;text-anchor:middle}
+.tbl text.sub{font-family:"Archivo",sans-serif;font-size:9.5px;text-anchor:middle;letter-spacing:.02em}
+.tbl:hover rect.body,.tbl:hover circle.body{filter:brightness(.96)}
+.fixture{fill:var(--sunken);stroke:var(--rule-strong);stroke-width:1}
+.fixture-lbl{font-family:"Archivo",sans-serif;font-size:10px;font-weight:600;letter-spacing:.14em;fill:var(--faint);text-anchor:middle}
+.wall{fill:none;stroke:var(--rule-strong);stroke-width:1.5}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 15px;padding:9px 13px;border-top:1px solid var(--rule);font-size:11.5px;color:var(--muted)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px;border:1px solid var(--rule-strong)}
+
+.assignbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 13px;
+  border-top:1px solid var(--rule);background:var(--surface-2);border-radius:0 0 10px 10px;min-height:53px}
+.assignbar .msg{font-size:13px;color:var(--ink-2)}
+.assignbar .msg b{font-weight:600}
+.assignbar .spacer{margin-left:auto}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:999px;
+  background:var(--sunken);color:var(--ink-2);margin-left:4px}
+.pill.ok{background:var(--good-soft);color:var(--good)}
+.pill.sq{background:var(--warn-soft);color:var(--warn)}
+
+/* ── the question ─────────────────────────────────────────────────
+   Pinned to the bottom of the viewport: the floor plan scrolls behind it,
+   the question never leaves the screen.                                  */
+#quiz{position:sticky;bottom:0;z-index:25;padding:14px 0 12px;
+  background:linear-gradient(to top,var(--bg) 78%,transparent)}
+.quiz{border:2px solid var(--ink);border-radius:12px;background:var(--surface);
+  box-shadow:0 -2px 10px rgba(20,23,28,.07),0 8px 24px rgba(20,23,28,.10);overflow:hidden}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .quiz{box-shadow:0 -2px 12px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4)}}
+:root[data-theme="dark"] .quiz{box-shadow:0 -2px 12px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4)}
+.quiz-top{display:flex;align-items:baseline;gap:10px;padding:9px 16px;
+  background:var(--ink);color:var(--bg)}
+.quiz-top .clock{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.quiz-top .of{font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.72}
+.quiz-top .also{margin-left:auto;font-size:11.5px;font-weight:600;opacity:.9}
+.quiz-body{padding:15px 16px 16px}
+
+.guest{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.guest .nm{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.guest .sz{font-size:15px;font-weight:500;color:var(--muted)}
+.state{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;
+  font-size:12px;font-weight:700;letter-spacing:.02em;border:1.5px solid}
+.state::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.state.ready{color:var(--ready);border-color:var(--ready-line);background:var(--ready-soft)}
+.state.late {color:var(--late); border-color:var(--late-line); background:var(--late-soft)}
+.state.inc  {color:var(--inc);  border-color:var(--inc-line);  background:var(--inc-soft)}
+.state.early{color:var(--muted);border-color:var(--rule-strong);background:var(--surface-2)}
+.state.walk {color:var(--s2);   border-color:var(--s2);        background:var(--s2-soft)}
+.guest-sub{font-size:13.5px;color:var(--ink-2);margin:2px 0 0}
+.guest-sub b{font-weight:600}
+
+.stem{font-size:16px;font-weight:600;margin:15px 0 10px;letter-spacing:-.01em}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px}
+.opt{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;
+  border:1.5px solid var(--rule-strong);border-radius:9px;background:var(--surface);
+  padding:11px 13px;transition:border-color .12s,background .12s}
+.opt:hover:not(:disabled){border-color:var(--ink);background:var(--surface-2)}
+.opt:disabled{opacity:.4;cursor:not-allowed}
+.opt .k{font-size:14px;font-weight:600}
+.opt .d{font-size:11.5px;color:var(--muted);line-height:1.35}
+.opt.go{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.opt.go:hover:not(:disabled){background:var(--ink);opacity:.88}
+.opt.go .d{color:var(--bg);opacity:.72}
+.opt.warn{border-color:var(--bad);color:var(--bad)}
+.opt.warn .d{color:var(--bad);opacity:.75}
+
+.placebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;
+  padding:11px 13px;border-radius:9px;background:var(--pick-soft);border:1.5px solid var(--pick)}
+.placebar .t{font-size:13.5px;font-weight:600;color:var(--ink)}
+.placebar .sp{margin-left:auto}
+
+/* door list */
+.door{display:flex;flex-direction:column;gap:6px;padding:9px 11px}
+.dr{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;
+  border-left:3px solid var(--rule-strong);padding:5px 8px;border-radius:0 6px 6px 0;background:var(--surface-2)}
+.dr.ready{border-left-color:var(--ready);background:var(--ready-soft)}
+.dr.late {border-left-color:var(--late); background:var(--late-soft)}
+.dr.inc  {border-left-color:var(--inc);  background:var(--inc-soft)}
+.dr .nm{font-size:12.5px;font-weight:600}
+.dr .sub{font-size:10.5px;color:var(--muted)}
+.dr .w{font-size:11px;font-weight:700}
+.dr.ready .w{color:var(--ready)} .dr.late .w{color:var(--late)} .dr.inc .w{color:var(--inc)}
+.door-empty{font-size:12px;color:var(--muted);padding:14px 4px;text-align:center}
+
+.tl{overflow:auto;max-height:520px;padding:0 0 10px}
+.tl-grid{display:grid;min-width:760px;font-size:11px}
+.tl-row{display:grid;grid-template-columns:58px 1fr;align-items:center;border-bottom:1px solid var(--rule)}
+.tl-row:last-child{border-bottom:0}
+.tl-row.head{border-bottom:1px solid var(--rule-strong);position:sticky;top:0;background:var(--surface);z-index:2}
+.tl-row.zone{background:var(--surface-2)}
+.tl-row.zone .tl-name{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.tl-row.zone .tl-lane{height:18px;background:none}
+.tl-name{padding:0 8px;font-weight:600;font-size:12px}
+.tl-name small{display:block;font-weight:400;font-size:10px;color:var(--faint)}
+.tl-lane{position:relative;height:25px;background:repeating-linear-gradient(to right,
+  transparent 0,transparent calc(16.666% - 1px),var(--rule) calc(16.666% - 1px),var(--rule) 16.666%)}
+.tl-row.head .tl-lane{height:20px;background:none;display:flex}
+.tl-tick{flex:1;font-size:10px;color:var(--faint);border-left:1px solid var(--rule);padding-left:4px}
+.blk{position:absolute;top:3px;height:19px;border-radius:4px;display:flex;align-items:center;
+  padding:0 5px;font-size:10.5px;font-weight:600;overflow:hidden;white-space:nowrap;color:#fff}
+.blk.walk{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.24) 0 4px,transparent 4px 8px)}
+.gap{position:absolute;top:6px;height:13px;border:1px dashed var(--warn);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;font-size:9.5px;color:var(--warn);font-weight:600}
+.tl-row.closed .tl-lane{background:var(--closed);opacity:.4}
+
+.stat{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px dotted var(--rule)}
+.stat:last-child{border-bottom:0}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-size:13px;font-weight:600}
+.bar{height:6px;border-radius:3px;background:var(--sunken);overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;border-radius:3px}
+
+.walkin{border:1px solid var(--warn);background:var(--warn-soft);border-radius:10px;padding:13px}
+.walkin .hd{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.walkin .time{font-size:16px;font-weight:700}
+.walkin .body{font-size:13px;color:var(--ink-2);margin-bottom:9px}
+.walkin .body b{font-weight:600;color:var(--ink)}
+
+.score-hero{padding:16px 14px;text-align:center;border-bottom:1px solid var(--rule)}
+.score-hero .g{font-size:52px;font-weight:700;letter-spacing:-.04em;line-height:1}
+.score-hero .p{font-size:12.5px;color:var(--muted);margin-top:2px}
+.dim{padding:9px 0;border-bottom:1px dotted var(--rule)}
+.dim:last-of-type{border-bottom:0}
+.dim .r{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.dim .r .k{font-size:12.5px;font-weight:600}
+.dim .r .v{font-size:12px;color:var(--muted)}
+.notes{list-style:none;margin:7px 0 0;padding:0;display:flex;flex-direction:column;gap:5px}
+.notes li{font-size:11.5px;line-height:1.4;color:var(--ink-2);padding-left:15px;position:relative}
+.notes li::before{content:"";position:absolute;left:4px;top:6px;width:5px;height:5px;border-radius:50%;background:var(--muted)}
+.notes li[data-k="bad"]::before{background:var(--bad)}
+.notes li[data-k="warn"]::before{background:var(--warn)}
+.notes li[data-k="good"]::before{background:var(--good)}
+
+.callout{border-left:2px solid var(--pick);background:var(--pick-soft);padding:9px 11px;
+  border-radius:0 var(--r) var(--r) 0;font-size:12.5px;line-height:1.5;margin-top:10px}
+
+details.model{margin-top:12px;border-top:1px solid var(--rule);padding-top:10px}
+details.model summary{font-size:12.5px;font-weight:600;cursor:pointer;color:var(--pick)}
+details.model table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11.5px}
+details.model th{text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);
+  padding:4px 5px;border-bottom:1px solid var(--rule);font-weight:600}
+details.model td{padding:3px 5px;border-bottom:1px dotted var(--rule)}
+details.model td.diff{color:var(--warn);font-weight:600}
+details.model .scroll{max-height:340px;overflow-y:auto}
+
+.foot{margin-top:22px;padding-top:12px;border-top:1px solid var(--rule);font-size:11.5px;color:var(--faint);line-height:1.7}
+.foot code{font-family:"IBM Plex Mono",monospace;background:var(--surface-2);padding:1px 4px;border-radius:3px;color:var(--muted)}
+.foot b{color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="top-row">
+    <div class="brand">
+      <h1>Fill the Room</h1>
+      <div class="sub">Host seating drill &middot; build the plan, run the night, get graded</div>
+    </div>
+    <div class="night-chip" id="nightChip" data-t="mid">
+      <span class="dot"></span><b id="chipType">Mid night</b><span id="chipDetail"></span>
+    </div>
+    <div class="seg" role="group" aria-label="Difficulty">
+      <button data-mode="easy" aria-pressed="true">Easy</button>
+      <button data-mode="medium" aria-pressed="false">Medium</button>
+      <button data-mode="hard" aria-pressed="false">Hard</button>
+    </div>
+    <div class="seg" role="group" aria-label="Night type">
+      <button data-gen="random" aria-pressed="true">Random</button>
+      <button data-gen="slow" aria-pressed="false">Slow</button>
+      <button data-gen="mid" aria-pressed="false">Mid</button>
+      <button data-gen="busy" aria-pressed="false">Busy</button>
+    </div>
+    <button class="btn" id="newNight">New night</button>
+    <button class="btn ghost mono" id="seedBtn" title="Same seed = same night. Give every trainee the same number.">#0000</button>
+  </div>
+  <ol class="steps" id="steps"></ol>
+</header>
+
+<div class="board">
+  <section class="card col-book">
+    <div class="card-hd"><h2 id="bookTitle">The book</h2><span class="count" id="bookCount"></span></div>
+    <div class="book" id="book"></div>
+  </section>
+
+  <section class="card col-floor">
+    <div class="card-hd">
+      <h2>Floor</h2><span class="count" id="floorClock"></span>
+      <button class="btn ghost sm" id="windowsBtn" style="margin-left:8px">Show open windows</button>
+    </div>
+    <svg class="floor" id="floor" viewBox="0 0 1160 420" role="img" aria-label="Dining room floor plan"></svg>
+    <div class="legend" id="legend"></div>
+    <div class="assignbar" id="assignbar"></div>
+  </section>
+
+  <aside class="col-side" id="side"></aside>
+</div>
+
+<div id="quiz"></div>
+
+<section class="card" style="margin-top:14px">
+  <div class="card-hd"><h2>Timeline</h2><span class="count">one row per table &middot; 5:00&ndash;10:45pm</span></div>
+  <div class="tl"><div class="tl-grid" id="timeline"></div></div>
+</section>
+
+<p class="foot" id="foot"></p>
+</div>
+
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════════
+   CONFIG — the real room, from the GuestCenter floor plan,
+   the combination table, and 1,511 seated parties in August 2026.
+   ═══════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  serviceStart: 17*60,      // 5:00pm — the biggest seating bucket in the data
+  serviceEnd:   23*60+15,
+  lastSeating:  21*60+45,   // August still seated at 10:00pm, rarely later
+  reset: 10,
+  squeezeMin: 60, squeezeMax: 90,
+
+  /* The one input August cannot give us: the export has no departure time.
+     These are set so the room's throughput matches what it actually did
+     (up to 225 covers / 80 parties on 26 tables). Correct them if you know better. */
+  turn(p, bar){ if(bar) return p<=2?50:65;
+                return p<=2?70 : p<=4?85 : p<=6?100 : p<=9?115 : 135; },
+
+  /* seats per single table — max party actually seated there in August */
+  tables:[
+    // banquette row, bottom (10s).  15 is the 4-top.
+    {id:"16",seats:2,zone:"10s",x:60, y:300,w:44,h:52},
+    {id:"15",seats:4,zone:"10s",x:124,y:300,w:64,h:52},
+    {id:"14",seats:2,zone:"10s",x:188,y:300,w:44,h:52},
+    {id:"13",seats:2,zone:"10s",x:240,y:300,w:44,h:52},
+    {id:"12",seats:2,zone:"10s",x:292,y:300,w:44,h:52},
+    {id:"11",seats:2,zone:"10s",x:344,y:300,w:44,h:52},
+    // banquette row, top (20s).  25 is the 4-top.
+    {id:"26",seats:2,zone:"20s",x:60, y:100,w:44,h:52},
+    {id:"25",seats:4,zone:"20s",x:124,y:100,w:64,h:52},
+    {id:"24",seats:2,zone:"20s",x:188,y:100,w:44,h:52},
+    {id:"23",seats:2,zone:"20s",x:240,y:100,w:44,h:52},
+    {id:"22",seats:2,zone:"20s",x:292,y:100,w:44,h:52},
+    {id:"21",seats:2,zone:"20s",x:344,y:100,w:44,h:52},
+    // middle block — these are 6-tops (max party seated: 6 on every one)
+    {id:"31",seats:6,zone:"30s",x:452,y:300,w:58,h:96,sweet:4},
+    {id:"32",seats:6,zone:"30s",x:540,y:300,w:58,h:96,sweet:4},
+    {id:"33",seats:6,zone:"30s",x:628,y:300,w:58,h:96,sweet:4},
+    {id:"34",seats:6,zone:"30s",x:716,y:300,w:58,h:96,sweet:4},
+    {id:"41",seats:6,zone:"40s",x:452,y:100,w:58,h:96,sweet:4},
+    {id:"42",seats:6,zone:"40s",x:540,y:100,w:58,h:96,sweet:4},
+    {id:"43",seats:6,zone:"40s",x:628,y:100,w:58,h:96,sweet:4},
+    {id:"44",seats:6,zone:"40s",x:716,y:100,w:58,h:96,sweet:4},
+    // the 50s sit right at the door, next to the bar — first thing you see,
+    // and the last thing you should sell.  51 is deepest in, 53 is on the mat.
+    {id:"51",seats:2,zone:"50s",x:880, y:300,w:48,h:44},
+    {id:"52",seats:2,zone:"50s",x:976, y:300,w:48,h:44},
+    {id:"53",seats:2,zone:"50s",x:1072,y:300,w:48,h:44},
+    // the bar — 8 stools, one seat each
+    {id:"B1",seats:1,zone:"bar",x:846, y:104,r:17},
+    {id:"B2",seats:1,zone:"bar",x:884, y:104,r:17},
+    {id:"B3",seats:1,zone:"bar",x:922, y:104,r:17},
+    {id:"B4",seats:1,zone:"bar",x:960, y:104,r:17},
+    {id:"B5",seats:1,zone:"bar",x:998, y:104,r:17},
+    {id:"B6",seats:1,zone:"bar",x:1036,y:104,r:17},
+    {id:"B7",seats:1,zone:"bar",x:1074,y:104,r:17},
+    {id:"B8",seats:1,zone:"bar",x:1112,y:104,r:17}
+  ],
+
+  /* physical runs — "right next to each other" */
+  runs:{ "10s":["16","15","14","13","12","11"], "20s":["26","25","24","23","22","21"],
+         "30s":["31","32","33","34"], "40s":["41","42","43","44"],
+         "50s":["51","52","53"], "bar":["B1","B2","B3","B4","B5","B6","B7","B8"] },
+
+  /* the combination table, exactly as configured in GuestCenter.
+     14/15 is deliberately NOT a legal pair — the list is the list. */
+  combos:[
+    [["11","12"],5],[["12","13"],4],[["13","14"],4],[["15","16"],7],
+    [["11","12","13"],7],[["12","13","14"],6],[["14","15","16"],9],
+    [["11","12","13","14"],9],[["13","14","15","16"],12],
+    [["11","12","13","14","15"],14],[["12","13","14","15","16"],14],
+    [["11","12","13","14","15","16"],16],
+    [["21","22"],5],[["22","23"],4],[["23","24"],4],[["25","26"],7],
+    [["21","22","23"],7],[["22","23","24"],6],[["24","25","26"],9],
+    [["21","22","23","24"],9],[["23","24","25","26"],12],
+    [["21","22","23","24","25"],14],[["22","23","24","25","26"],14],
+    [["21","22","23","24","25","26"],16]
+  ],
+
+  /* YOUR fill order. Middle block is verbatim; the banquette order is your
+     first four (21,12,23,14) continued on the same stagger, holding the
+     4-tops (15,25) and their partners (16,26) back for the 7-top combos. */
+  wingMid:  ["33","42","31","44","32","41","34","43"],
+  wingBanq: ["21","12","23","14","22","11","24","13","26","16","25","15"],
+  back:     ["51","52","53"],
+
+  /* Occasions. A birthday or an anniversary should land somewhere that feels
+     chosen: the four ends of the banquette runs, which are open on one side
+     instead of wedged between two deuces — or a two-top given a whole 30s/40s
+     table, when the room can afford it. Never the door tables, never the bar. */
+  occasionTags:   ["Birthday","Anniversary","Special Occasion"],
+  occasionTables: ["11","16","21","26"],
+
+  /* sections read straight off the Server column in August */
+  sections:{
+    1:[{name:"Server 1",key:"s1",zones:["10s","20s","30s","40s"]}],
+    2:[{name:"Server 1",key:"s1",zones:["10s","20s"]},
+       {name:"Server 2",key:"s2",zones:["30s","40s"]}],
+    /* Three up, the banquettes split and each of those servers picks up two
+       middle tables — which is what Josh and Katie's tables look like in August.
+       26 / 26 / 24 seats, and every section is one contiguous piece of room. */
+    3:[{name:"Server 1",key:"s1",tables:["11","12","13","14","15","16","31","32"]},
+       {name:"Server 2",key:"s2",tables:["21","22","23","24","25","26","41","42"]},
+       {name:"Server 3",key:"s3",tables:["33","34","43","44"]}]
+  },
+  barSection:{name:"Bar",key:"sB",zones:["bar","50s"]},
+
+  /* volume tiers, straight from August */
+  nights:{
+    slow:{servers:1,covers:[62,109], walkins:[7,11], label:"Slow night",
+          curve:[.17,.15,.19,.17,.12,.07,.07,.06,.02,.01,.005]},
+    mid: {servers:2,covers:[107,155],walkins:[8,12], label:"Mid night",
+          curve:[.14,.13,.11,.11,.13,.13,.11,.10,.03,.015,.005]},
+    busy:{servers:3,covers:[160,225],walkins:[11,16],label:"Busy night",
+          curve:[.19,.11,.07,.10,.12,.09,.09,.09,.06,.06,.02]}
+  },
+  /* party mix, August: 1s 6%, 2s 60%, 3s 13%, 4s 12%, 5s 4%, 6s 3%, 7+ 1.5% */
+  sizeMix:[[1,.062],[2,.600],[3,.126],[4,.124],[5,.044],[6,.025],[7,.009],[8,.006],[9,.002],[12,.002]],
+  walkMix:[[1,.168],[2,.653],[3,.112],[4,.044],[5,.018],[6,.005]],
+
+  pacing:{doubleSat:8,tight:16,clusterWindow:26,clusterCount:3},
+  spreadWindow:25,
+
+  /* ── difficulty ──────────────────────────────────────────────────
+     Easy is the book, in order: learn the room and the fill order.
+     Medium and Hard put you at the door instead — one party at a time,
+     and every one of them is a decision.                              */
+  modes:{
+    easy:{ label:"Easy", blurb:"The book, in order. Plan the whole night, then take walk-ins.",
+           stream:false },
+    medium:{ label:"Medium", stream:true,
+           blurb:"They arrive one at a time and out of order. Seat them, or make them wait.",
+           jitter:[-20,8], lateRate:.10, incompleteRate:0, doubleRate:0 },
+    hard:{ label:"Hard", stream:true,
+           blurb:"Out of order, running late, and half the party still parking.",
+           jitter:[-20,10], lateRate:.28, incompleteRate:.22, doubleRate:.14 }
+  },
+  recheck:10,        // a held party comes back to you this often
+  walkOutAfter:45,   // wait longer than this past your booking and you leave
+  earlyGrace:10      // seated this far before your booking still counts as on time
+};
+
+/* ---- derived ---- */
+const T = Object.fromEntries(CONFIG.tables.map(t=>[t.id,t]));
+const PRIORITY = (()=>{
+  const out=[],A=CONFIG.wingMid.slice(),B=CONFIG.wingBanq.slice();
+  while(A.length||B.length){ if(A.length)out.push(A.shift()); if(B.length)out.push(B.shift()); }
+  return out.concat(CONFIG.back, CONFIG.runs.bar);
+})();
+const RANK = Object.fromEntries(PRIORITY.map((id,i)=>[id,i]));
+
+const NEIGHBOURS = (()=>{
+  const n={}; CONFIG.tables.forEach(t=>n[t.id]=[]);
+  Object.values(CONFIG.runs).forEach(run=>{
+    for(let i=0;i<run.length-1;i++){ n[run[i]].push(run[i+1]); n[run[i+1]].push(run[i]); }
+  });
+  return n;
+})();
+
+/* every seatable unit: singles, the configured banquette combos, and bar runs */
+const ALL_OPTIONS = (()=>{
+  const out = CONFIG.tables.map(t=>({tables:[t.id],seats:t.seats}));
+  CONFIG.combos.forEach(([ids,max])=>out.push({tables:ids.slice(),seats:max}));
+  const B=CONFIG.runs.bar;
+  for(let i=0;i<B.length;i++) for(let j=i+1;j<B.length;j++)
+    out.push({tables:B.slice(i,j+1),seats:j-i+1});
+  out.forEach(o=>{ o.key=o.tables.join("+");
+    o.rank=o.tables.reduce((s,id)=>s+RANK[id],0)/o.tables.length;
+    o.bar=o.tables.every(id=>T[id].zone==="bar"); });
+  return out;
+})();
+const OPT_BY_KEY = Object.fromEntries(ALL_OPTIONS.map(o=>[[...o.tables].sort().join("|"),o]));
+
+/* ═══════════════════════════════════════════ helpers */
+const mulberry32=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+const fmt=m=>{const h=Math.floor(m/60)%24,x=m%60,hh=h%12||12;
+  return hh+":"+String(x).padStart(2,"0")+(h<12?"am":"pm");};
+const fmtShort=m=>{const h=Math.floor(m/60)%24,x=m%60,hh=h%12||12;
+  return x===0?""+hh:hh+":"+String(x).padStart(2,"0");};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const sum=a=>a.reduce((x,y)=>x+y,0);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const NAMES=["Nguyen","Okafor","Ramirez","Whitfield","Castellanos","Bergeron","Ito","Halloran",
+"Adeyemi","Sandoval","Kaminski","Prasad","Delacroix","Mbeki","Reyes","Lindqvist","Oyelaran",
+"Barros","Ferrante","Ashworth","Tanaka","Villalobos","Novak","Osei","Cabrera","Fitzgerald",
+"Marchetti","Ibarra","Sorensen","Attah","Quintero","Rosenthal","Bhatt","Mireles","Grealish",
+"Escamilla","Dubois","Yamamoto","Karimi","Solberg","Trujillo","Anand","Petrov","Coelho",
+"Achebe","Beaumont","Chandra","Dlamini","Eriksen","Fontaine","Gutierrez","Hwang","Imani",
+"Jovanovic","Kowalski","Laurent","Moreau","Nakamura","Ozturk","Pereira","Rossi","Suzuki"];
+/* the tags that actually appear in the book */
+const TAGS=[["Birthday","bday",.108],["Date Night","date",.047],["Anniversary","bday",.026],
+            ["Special Occasion","bday",.024],["Business Meal","date",.006]];
+const GUEST_TAGS=[["Alert the Manager","vip",.018],["Friend of Employee","vip",.015],
+                  ["Industry","vip",.005],["Regular","vip",.004]];
+
+/* ═══════════════════════════════════════════ night generation */
+/* Greedy feasibility pass. A book that cannot physically be seated is not a fair
+   drill, so anything that will not go down is dropped before the night starts.
+   The pass may lean on the front of the bar for ones and twos — August put 15%
+   of all seatings there — but never touches B6/B7/B8, which stay as the
+   walk-in valve the host is being tested on. */
+const WALKIN_STOOLS = new Set(["B6","B7","B8"]);
+function feasibleTrim(list){
+  const occ={}; CONFIG.tables.forEach(t=>occ[t.id]=[]);
+  const free=(tid,s,e)=>occ[tid].every(b=>e+CONFIG.reset<=b[0]||s>=b[1]+CONFIG.reset);
+  const kept=new Set();
+  const chrono=(a,b)=>a.time-b.time||b.party-a.party;
+  const usable=(o,p)=> o.bar ? (p<=2 && o.tables.every(t=>!WALKIN_STOOLS.has(t))) : true;
+  const run=set=>set.sort(chrono).forEach(r=>{
+    const end=r.time+CONFIG.turn(r.party,false);
+    const opts=ALL_OPTIONS
+      .filter(o=>usable(o,r.party) && o.seats>=r.party && o.tables.every(t=>free(t,r.time,end)))
+      .sort((a,b)=>(a.bar?1:0)-(b.bar?1:0) ||        // dining room first, bar as relief
+                   (a.seats-r.party)-(b.seats-r.party) ||
+                   a.tables.length-b.tables.length || a.rank-b.rank);
+    if(!opts.length) return;                       // room genuinely full — drop it
+    opts[0].tables.forEach(t=>occ[t].push([r.time,end]));
+    kept.add(r.id);
+  });
+  /* Parties needing a combination go down first so their tables exist; then the
+     rest fill in chronologically, which is how a book actually fills. */
+  run(list.filter(r=>r.party>=6));
+  run(list.filter(r=>r.party<6));
+  return list.filter(r=>kept.has(r.id));
+}
+
+function genNight(seed, forced, mode){
+  const r = mulberry32(seed);
+  const type = forced || ["slow","mid","busy"][Math.floor(r()*3)];
+  const N = CONFIG.nights[type];
+
+  const secDefs = CONFIG.sections[N.servers].concat([CONFIG.barSection]);
+  const section = {};
+  secDefs.forEach(s=>{
+    const ids = s.tables || s.zones.flatMap(z=>CONFIG.runs[z]);
+    ids.forEach(id=>section[id]=s.key);
+  });
+  const open = CONFIG.tables.map(t=>t.id);      // the whole room works every night
+
+  /* Arrival times are drawn from a pool weighted by the real 30-minute curve,
+     so the night keeps its shape instead of flattening against a per-slot cap. */
+  const buckets=[]; for(let m=CONFIG.serviceStart;m<=CONFIG.serviceStart+600;m+=30) buckets.push(m);
+  const curve=N.curve;
+  const pool=[];
+  buckets.forEach((m,i)=>{
+    const n=Math.round((curve[i]||0)*120);
+    for(let k=0;k<n;k++){ pool.push(m); if(m+15<=CONFIG.lastSeating) pool.push(m+15); }
+  });
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  let pi=0;
+  const perSlot={slow:3,mid:5,busy:6}[type], used={};
+  const pickTime=()=>{ for(let a=0;a<pool.length;a++){
+      const m=pool[(pi++)%pool.length];
+      if(m<=CONFIG.lastSeating && (used[m]||0)<perSlot){ used[m]=(used[m]||0)+1; return m; } }
+    return null; };
+  const pickSize=mix=>{ let x=r(); for(const [s,w] of mix){ x-=w; if(x<=0) return s; } return 2; };
+
+  const target = N.covers[0]+Math.floor(r()*(N.covers[1]-N.covers[0]+1));
+  const bag=NAMES.slice(); for(let i=bag.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]];}
+  let nm=0; const nextName=()=>bag[(nm++)%bag.length];
+
+  const list=[]; let covers=0,id=1;
+  let guard=0;
+  while(covers<target && guard++<600){
+    const t=pickTime(); if(t===null) break;
+    const p=pickSize(CONFIG.sizeMix);
+    let tag="",tagc="",vip="";
+    let x=r(); for(const [name,cls,w] of TAGS){ x-=w; if(x<=0){tag=name;tagc=cls;break;} }
+    x=r(); for(const [name,cls,w] of GUEST_TAGS){ x-=w; if(x<=0){vip=name;break;} }
+    list.push({id:"R"+(id++),time:t,party:p,name:nextName(),tag,tagc,vip});
+    covers+=p;
+  }
+  /* every night in August had at least one party that needed a combination */
+  const needCombo = {slow:1,mid:2,busy:3}[type];
+  const haveBig = list.filter(x=>x.party>=6).length;
+  for(let i=haveBig;i<needCombo;i++){
+    const t = 18*60+30 + Math.floor(r()*9)*15;
+    list.push({id:"R"+(id++),time:t,party:[6,7,7,8,9][Math.floor(r()*5)],
+      name:nextName(),tag:r()<.4?"Birthday":"",tagc:"bday",vip:""});
+  }
+  /* A book that cannot physically be seated is not a fair drill. Trim to what
+     the DINING room holds on its own — the bar stays free for walk-ins. */
+  const kept=feasibleTrim(list);
+  list.length=0; kept.forEach(x=>list.push(x));
+  list.sort((a,b)=>a.time-b.time || b.party-a.party);
+
+  /* walk-ins — 22.5% of August's business, and 80% of the bar's */
+  const wCount=N.walkins[0]+Math.floor(r()*(N.walkins[1]-N.walkins[0]+1));
+  const walkins=[];
+  for(let i=0;i<wCount;i++){
+    const t=CONFIG.serviceStart+15+Math.floor(r()*((21*60+15)-CONFIG.serviceStart-15)/15)*15;
+    walkins.push({id:"W"+(i+1),time:t,party:pickSize(CONFIG.walkMix),name:nextName()});
+  }
+  walkins.sort((a,b)=>a.time-b.time);
+
+  /* How the night actually shows up at the door. */
+  const M=CONFIG.modes[mode]||CONFIG.modes.easy;
+  if(M.stream){
+    let prevT=null;
+    list.forEach(v=>{
+      const j=M.jitter;
+      let a=v.time+Math.round((j[0]+r()*(j[1]-j[0]))/5)*5;
+      if(r()<M.lateRate) a=v.time+[5,10,15,20,25,30][Math.floor(r()*6)];
+      a=clamp(a,CONFIG.serviceStart,CONFIG.serviceEnd-30);
+      if(M.doubleRate && prevT!==null && r()<M.doubleRate) a=prevT;   // two at the door at once
+      prevT=a;
+      v.arriveAt=a;
+      v.lateBy=Math.max(0,a-v.time);
+      if(v.party>=2 && r()<M.incompleteRate){
+        v.present=Math.max(1,v.party-(r()<.65?1:2));
+        v.completesAt=a+[5,10,10,15,20,25][Math.floor(r()*6)];
+      } else { v.present=v.party; v.completesAt=null; }
+    });
+  } else {
+    list.forEach(v=>{ v.arriveAt=v.time; v.lateBy=0; v.present=v.party; v.completesAt=null; });
+  }
+
+  return {seed,type,mode,label:N.label,servers:N.servers,secDefs,section,open,
+          reservations:list,walkins,covers:sum(list.map(x=>x.party))};
+}
+
+/* ═══════════════════════════════════════════ state */
+let night=null,S=null;
+const resetState=()=>{ S={phase:1,assign:{},selected:null,pending:[],wIdx:0,
+                          wDecisions:[],showWindows:false,report:null,
+                          queue:[],cur:null,step:"decide",door:{},doorLog:[],clock:CONFIG.serviceStart,
+                          seatedCount:0,walkedOut:[]}; };
+
+/* ═══════════════════════════════════════════ the door (medium & hard)
+   Every arrival is one question. Hold a party and they come back to you:
+   an incomplete party when the rest turn up, an early one at their booking
+   time, anyone else in ten minutes. Wait too long and they leave.        */
+const streaming=()=>CONFIG.modes[night.mode]&&CONFIG.modes[night.mode].stream;
+const doorOf=id=>S.door[id];
+
+function buildQueue(){
+  S.queue=[];
+  night.reservations.forEach(r=>{
+    S.door[r.id]={id:r.id,kind:"res",present:r.present,arrivedAt:r.arriveAt,holds:0,seated:false};
+    S.queue.push({t:r.arriveAt,seq:0,kind:"arrive",id:r.id});
+  });
+  night.walkins.forEach(w=>{
+    S.door[w.id]={id:w.id,kind:"walkin",present:w.party,arrivedAt:w.time,holds:0,seated:false};
+    S.queue.push({t:w.time,seq:1,kind:"arrive",id:w.id});
+  });
+  sortQueue();
+}
+const sortQueue=()=>S.queue.sort((a,b)=>a.t-b.t||a.seq-b.seq);
+
+function srcOf(id){ return id[0]==="W" ? night.walkins.find(w=>w.id===id)
+                                       : night.reservations.find(r=>r.id===id); }
+/* how long this party has been standing there, past the later of arrival and booking */
+function waitedBy(id,now){
+  const d=doorOf(id), src=srcOf(id);
+  const from=Math.max(d.arrivedAt, src.time||d.arrivedAt);
+  return Math.max(0, now-Math.max(from,d.arrivedAt));
+}
+function doorState(id,now){
+  const d=doorOf(id), src=srcOf(id);
+  if(d.kind==="walkin") return "walk";
+  if(d.present<src.party) return "inc";
+  if(now>src.time+2) return "late";
+  if(now<src.time-CONFIG.earlyGrace) return "early";
+  return "ready";
+}
+
+function advance(){
+  sortQueue();
+  while(S.queue.length){
+    const e=S.queue.shift();
+    S.clock=e.t;
+    /* anyone who has stood there too long gives up and goes */
+    S.queue=S.queue.filter(q=>{
+      const d=doorOf(q.id);
+      if(d.seated||q.kind==="complete") return true;
+      if(waitedBy(q.id,S.clock)>CONFIG.walkOutAfter){
+        d.gone=true; S.walkedOut.push(q.id);
+        S.doorLog.push({id:q.id,at:S.clock,action:"walked-out",wait:waitedBy(q.id,S.clock)});
+        return false;
+      }
+      return true;
+    });
+    const d=doorOf(e.id);
+    if(d.seated||d.gone) continue;
+    if(e.kind==="complete") d.present=srcOf(e.id).party;
+    if(waitedBy(e.id,S.clock)>CONFIG.walkOutAfter){
+      d.gone=true; S.walkedOut.push(e.id);
+      S.doorLog.push({id:e.id,at:S.clock,action:"walked-out",wait:waitedBy(e.id,S.clock)});
+      continue;
+    }
+    S.cur=e; S.step="decide"; S.pending=[]; return render();
+  }
+  S.cur=null; finish();
+}
+
+/* how many other parties are standing at the door right now */
+function alsoWaiting(){
+  if(!S.cur) return 0;
+  return S.queue.filter(q=>q.t<=S.clock && !doorOf(q.id).seated && !doorOf(q.id).gone).length;
+}
+
+function doorSeat(){ S.step="place"; S.pending=[]; render(); }
+
+function doorHold(reason){
+  const e=S.cur, d=doorOf(e.id), src=srcOf(e.id);
+  d.holds++;
+  const av=placeOptions(e.id);
+  S.doorLog.push({id:e.id,at:S.clock,action:"hold",reason,hadOpts:av.full.length+av.sq.length,
+                  state:doorState(e.id,S.clock),wait:waitedBy(e.id,S.clock)});
+  let back=S.clock+CONFIG.recheck;
+  if(src.completesAt && d.present<src.party) back=Math.max(back,src.completesAt);
+  if(src.time && S.clock<src.time) back=Math.min(Math.max(back,src.time),src.time);
+  S.queue.push({t:Math.min(back,CONFIG.serviceEnd),seq:2,
+                kind:(src.completesAt&&d.present<src.party&&back>=src.completesAt)?"complete":"recheck",id:e.id});
+  advance();
+}
+
+function doorTurnAway(){
+  const e=S.cur, d=doorOf(e.id); d.gone=true;
+  const o=placeOptions(e.id);
+  S.doorLog.push({id:e.id,at:S.clock,action:"turn-away",had:o.full.length+o.sq.length,
+                  state:doorState(e.id,S.clock)});
+  if(d.kind==="walkin") S.wDecisions.push({w:srcOf(e.id),action:"decline",had:o.full.length+o.sq.length});
+  advance();
+}
+
+/* what this party could physically take right now */
+function placeOptions(id){
+  const src=srcOf(id);
+  /* the rest of the party are still coming — the table has to hold all of them */
+  const size=src.party;
+  const bk=bookings(null), full=[], sq=[];
+  ALL_OPTIONS.forEach(o=>{
+    if(o.seats<size) return;
+    const need=CONFIG.turn(src.party,o.bar);
+    const win=Math.min(...o.tables.map(t=>windowFrom(bk,t,S.clock)));
+    if(win<=0) return;
+    if(win>=need) full.push({...o,win}); else if(win>=CONFIG.squeezeMin) sq.push({...o,win});
+  });
+  return {full,sq};
+}
+
+function doorPlace(tid){
+  const e=S.cur; if(!e) return;
+  const i=S.pending.indexOf(tid);
+  if(i>=0) S.pending.splice(i,1); else S.pending.push(tid);
+  render();
+}
+function doorConfirm(){
+  const e=S.cur, d=doorOf(e.id), src=srcOf(e.id);
+  const opt=matchOption(S.pending); if(!opt) return;
+  if(opt.seats<src.party) return;
+  const bk=bookings(null);
+  const win=Math.min(...opt.tables.map(t=>windowFrom(bk,t,S.clock)));
+  const need=CONFIG.turn(src.party,opt.bar);
+  if(win<CONFIG.squeezeMin) return;
+  commit(e.id,opt.tables,S.clock,S.clock+Math.min(need,win),d.kind==="walkin"?"walkin":"res");
+  d.seated=true; d.seatedAt=S.clock; d.tables=opt.tables.slice(); S.seatedCount++;
+  S.doorLog.push({id:e.id,at:S.clock,action:"seat",tables:opt.tables.slice(),
+                  state:doorState(e.id,S.clock),wait:waitedBy(e.id,S.clock),
+                  partial:d.present<src.party,present:d.present,
+                  squeeze:win<need,win,bar:opt.bar});
+  if(d.kind==="walkin") S.wDecisions.push({w:src,action:"seat",tables:opt.tables.slice(),
+                                           win,squeeze:win<need,bar:opt.bar});
+  /* seated before the rest of the party turned up — they still arrive later */
+  S.queue=S.queue.filter(q=>q.id!==e.id);
+  S.pending=[]; advance();
+}
+
+const isBarOpt=tables=>tables.every(t=>T[t].zone==="bar");
+const blockFor=res=>({start:res.time,end:res.time+CONFIG.turn(res.party,false)});
+
+function bookings(exclude){
+  const out={}; CONFIG.tables.forEach(t=>out[t.id]=[]);
+  for(const rid in S.assign){
+    if(rid===exclude) continue;
+    const a=S.assign[rid];
+    const src=a.kind==="walkin"?night.walkins.find(w=>w.id===rid):night.reservations.find(x=>x.id===rid);
+    if(!src) continue;
+    a.tables.forEach(t=>out[t]&&out[t].push({id:rid,start:a.start,end:a.end,src,kind:a.kind}));
+  }
+  CONFIG.tables.forEach(t=>out[t.id].sort((a,b)=>a.start-b.start));
+  return out;
+}
+const tableFree=(bk,tid,s,e)=>(bk[tid]||[]).every(b=>e+CONFIG.reset<=b.start||s>=b.end+CONFIG.reset);
+
+function windowFrom(bk,tid,at){
+  const list=bk[tid]||[];
+  for(const b of list) if(at<b.end+CONFIG.reset && at>=b.start-CONFIG.reset) return 0;
+  let next=CONFIG.serviceEnd;
+  for(const b of list) if(b.start>at){ next=Math.min(next,b.start-CONFIG.reset); break; }
+  return Math.max(0,next-at);
+}
+function optionsFor(party,start,dur,exclude){
+  const bk=bookings(exclude);
+  return ALL_OPTIONS.filter(o=>o.seats>=party && o.tables.every(t=>tableFree(bk,t,start,start+dur)));
+}
+/* a 6-top taking a deuce is normal in this room; a 4-table combo taking one is not */
+const reasonable=(o,p)=> o.tables.length>1 ? o.seats<=p+2 : o.seats<=p+4;
+const matchOption=ids=>ids.length?OPT_BY_KEY[[...ids].sort().join("|")]||null:null;
+
+/* ---- occasions ---- */
+const END_TABLES=new Set(CONFIG.occasionTables);
+const isCelebration=r=>CONFIG.occasionTags.includes(r.tag);
+/* 2 = the seat you want for a celebration, 1 = decent, 0 = nothing special */
+function niceness(o,party){
+  if(o.bar||o.tables.some(t=>T[t].zone==="50s")) return 0;   // bar and door tables never
+  if(o.tables.length>1) return party>=5?1:0;                 // a combination, for a big table
+  const t=T[o.tables[0]];
+  if(END_TABLES.has(t.id)) return 2;                         // 11 / 16 / 21 / 26
+  if((t.zone==="30s"||t.zone==="40s") && party<=t.seats-2) return 1;   // room to spare
+  if((t.id==="15"||t.id==="25") && party>=3) return 1;       // the banquette four-tops
+  return 0;
+}
+
+/* ═══════════════════════════════════════════ actions */
+function selectRes(rid){ if(S.phase!==1)return; S.selected=S.selected===rid?null:rid; S.pending=[]; render(); }
+function commit(rid,tables,start,end,kind){ S.assign[rid]={tables,start,end,kind}; }
+function unassign(rid){ delete S.assign[rid]; if(S.selected===rid)S.pending=[]; render(); }
+function nextUnassigned(after){
+  const L=night.reservations,i=L.findIndex(r=>r.id===after);
+  for(let k=i+1;k<L.length;k++) if(!S.assign[L[k].id]) return L[k].id;
+  for(let k=0;k<i;k++) if(!S.assign[L[k].id]) return L[k].id;
+  return null;
+}
+function clickTable(tid){
+  if(S.phase===1) return planClick(tid);
+  if(S.phase!==2) return;
+  if(streaming()) return S.step==="place" ? doorPlace(tid) : null;
+  serviceClick(tid);
+}
+
+function planClick(tid){
+  if(!S.selected) return;
+  const res=night.reservations.find(r=>r.id===S.selected);
+  const bar=T[tid].zone==="bar";
+  const dur=CONFIG.turn(res.party, bar || S.pending.every(t=>T[t].zone==="bar")&&S.pending.length>0);
+  const start=res.time;
+  const bk=bookings(S.selected);
+  if(!tableFree(bk,tid,start,start+dur)) return;
+
+  const i=S.pending.indexOf(tid);
+  if(i>=0) S.pending.splice(i,1); else S.pending.push(tid);
+
+  const opt=matchOption(S.pending);
+  if(opt && opt.seats>=res.party){
+    const d=CONFIG.turn(res.party,opt.bar);
+    if(S.pending.every(t=>tableFree(bk,t,start,start+d)))
+      { commit(res.id,opt.tables,start,start+d,"res"); S.pending=[]; S.selected=nextUnassigned(res.id); }
+  }
+  render();
+}
+
+const currentWalkin=()=>night.walkins[S.wIdx]||null;
+function walkinOptions(w){
+  const bk=bookings(null),full=[],sq=[];
+  ALL_OPTIONS.forEach(o=>{
+    if(o.seats<w.party) return;
+    const need=CONFIG.turn(w.party,o.bar);
+    const win=Math.min(...o.tables.map(t=>windowFrom(bk,t,w.time)));
+    if(win<=0) return;
+    if(win>=need) full.push({...o,win}); else if(win>=CONFIG.squeezeMin) sq.push({...o,win});
+  });
+  return {full,sq};
+}
+function serviceClick(tid){
+  const w=currentWalkin(); if(!w) return;
+  const i=S.pending.indexOf(tid);
+  if(i>=0) S.pending.splice(i,1); else S.pending.push(tid);
+  const opt=matchOption(S.pending);
+  if(opt && opt.seats>=w.party){
+    const bk=bookings(null);
+    const win=Math.min(...opt.tables.map(t=>windowFrom(bk,t,w.time)));
+    const need=CONFIG.turn(w.party,opt.bar);
+    if(win>=CONFIG.squeezeMin){
+      commit(w.id,opt.tables,w.time,w.time+Math.min(need,win),"walkin");
+      S.wDecisions.push({w,action:"seat",tables:opt.tables,win,squeeze:win<need,bar:opt.bar});
+      S.pending=[]; S.wIdx++;
+      if(S.wIdx>=night.walkins.length) return finish();
+    } else S.pending=[];
+  }
+  render();
+}
+function declineWalkin(){
+  const w=currentWalkin(); if(!w) return;
+  const o=walkinOptions(w);
+  S.wDecisions.push({w,action:"decline",had:o.full.length+o.sq.length});
+  S.pending=[]; S.wIdx++;
+  if(S.wIdx>=night.walkins.length) finish(); else render();
+}
+const startService=()=>{ S.phase=2; S.selected=null; S.pending=[]; S.showWindows=false;
+  if(streaming()){ buildQueue(); advance(); } else render(); };
+const finish=()=>{ S.phase=3; S.report=grade(); render(); };
+
+/* ═══════════════════════════════════════════ model plan
+   Big parties onto their combinations first, then everything else in time
+   order — each pick weighed on visibility, spread, pacing and size fit.   */
+function modelPlan(keepCurrent){
+  const save=S.assign;
+  S.assign = keepCurrent ? Object.assign({},save) : {};
+  const all = keepCurrent ? night.reservations.filter(r=>!save[r.id]) : night.reservations;
+  const big=all.filter(r=>r.party>=5).sort((a,b)=>b.party-a.party||a.time-b.time);
+  const rest=all.filter(r=>r.party<5).sort((a,b)=>a.time-b.time);
+  const place=r=>{
+    const start=r.time;
+    let opts=optionsFor(r.party,start,CONFIG.turn(r.party,false),r.id).filter(o=>reasonable(o,r.party));
+    if(!opts.length) opts=optionsFor(r.party,start,CONFIG.turn(r.party,false),r.id);
+    if(!opts.length) return;
+    const bk=bookings(r.id);
+    let best=null,bc=Infinity;
+    opts.forEach(o=>{
+      let c=o.rank;
+      c+=(o.seats-r.party)*1.4;
+      // the bar belongs to walk-ins — but a solo diner genuinely belongs there
+      if(o.bar) c+= r.party===1 ? -4 : r.party===2 ? 20 : 60;
+      if(r.vip && o.tables.some(t=>T[t].zone==="50s")) c+=16;
+      /* birthdays and anniversaries reach for an end table first, a whole
+         30s/40s table only when the rest of the maths allows it */
+      if(isCelebration(r)){
+        const nice=niceness(o,r.party);
+        c += nice===2 ? -14 : nice===1 ? -5 : 0;
+        if(o.bar||o.tables.some(t=>T[t].zone==="50s")) c+=30;   // only when truly forced
+      }
+      // holding 15/25 and their partners for the 7-tops
+      if(r.party<=2 && o.tables.some(t=>["15","25","16","26"].includes(t))) c+=10;
+      o.tables.forEach(t=>NEIGHBOURS[t].forEach(nb=>(bk[nb]||[]).forEach(b=>{
+        if(Math.abs(b.start-start)<=CONFIG.spreadWindow) c+=6; })));
+      const sec=night.section[o.tables[0]];
+      Object.entries(bk).forEach(([t,bs])=>{ if(night.section[t]!==sec) return;
+        bs.forEach(b=>{ const d=Math.abs(b.start-start);
+          if(d<CONFIG.pacing.doubleSat) c+=9; else if(d<CONFIG.pacing.tight) c+=4; }); });
+      if(c<bc){bc=c;best=o;}
+    });
+    if(best) commit(r.id,best.tables,start,start+CONFIG.turn(r.party,best.bar),"res");
+  };
+  big.forEach(place); rest.forEach(place);
+  /* Anything the greedy pass stranded gets placed anywhere legal, bar included —
+     a model plan that leaves a reservation standing is no model at all. */
+  all.filter(r=>!S.assign[r.id]).forEach(r=>{
+    const o=optionsFor(r.party,r.time,CONFIG.turn(r.party,false),r.id).sort((a,b)=>a.rank-b.rank)[0];
+    if(o) commit(r.id,o.tables,r.time,r.time+CONFIG.turn(r.party,o.bar),"res");
+  });
+  const plan={}; for(const k in S.assign) plan[k]=S.assign[k];
+  S.assign=save; return plan;
+}
+
+/* ═══════════════════════════════════════════ grading */
+function grade(){
+  const R=night.reservations, seated=R.filter(r=>S.assign[r.id]);
+  const nt={vis:[],occ:[],spread:[],pace:[],combo:[],bal:[],walk:[],door:[]};
+  const bkAll=bookings(null);
+
+  /* ── 1. visibility & fill order ── */
+  let visLoss=0,visMax=0;
+  seated.forEach(r=>{
+    const a=S.assign[r.id], chosen=matchOption(a.tables);
+    let opts=optionsFor(r.party,a.start,a.end-a.start,r.id).filter(o=>reasonable(o,r.party));
+    if(!opts.length||!chosen) return;
+    opts.sort((x,y)=>x.rank-y.rank);
+    visMax+=6;
+    const idx=opts.findIndex(o=>o.key===chosen.key);
+    if(idx<0){ visLoss+=6;
+      nt.vis.push({k:"bad",t:`<b>${esc(r.name)}</b> (${r.party}) on <span class="mono">${chosen.key}</span> — ${chosen.seats} seats for ${r.party}. You burned a top you needed later.`});
+    } else {
+      visLoss+=Math.min(6,idx);
+      if(idx>=5) nt.vis.push({k:"warn",t:`<b>${esc(r.name)}</b> ${fmt(r.time)} — you passed <span class="mono">${opts[0].key}</span> and <span class="mono">${opts[1].key}</span> to sit <span class="mono">${chosen.key}</span>.`});
+    }
+    if(a.tables.some(t=>T[t].zone==="50s")){
+      const better=opts.find(o=>!o.tables.some(t=>T[t].zone==="50s")&&!o.bar);
+      if(better){ visLoss+=3; visMax+=3;
+        nt.vis.push({k:"bad",t:`<b>${esc(r.name)}</b> went to <span class="mono">${a.tables.join("+")}</span>, right at the door, with <span class="mono">${better.key}</span> open. The 50s are last.`});}
+      if(r.vip) nt.vis.push({k:"bad",t:`<b>${esc(r.name)}</b> is flagged <em>${esc(r.vip)}</em> and you put them in the 50s.`});
+    }
+    if(r.party<=2 && a.tables.some(t=>["15","25"].includes(t)) && a.tables.length===1){
+      const two=opts.find(o=>o.seats===2&&!o.bar);
+      if(two){ visLoss+=3; visMax+=3;
+        nt.vis.push({k:"warn",t:`A deuce on <span class="mono">${a.tables[0]}</span> — that's a 4-top and half of your ${a.tables[0]==="15"?"15/16":"25/26"} seven. <span class="mono">${two.key}</span> was free.`});}
+    }
+    if(r.party>=3 && a.tables.length===1 && T[a.tables[0]].zone==="bar")
+      nt.vis.push({k:"warn",t:`<b>${esc(r.name)}</b> (${r.party}) on the bar. Bar stools are your walk-in valve — don't spend them on the book.`});
+  });
+  const visPct=visMax?1-visLoss/visMax:1;
+  if(visPct>=.85) nt.vis.push({k:"good",t:"You worked the order — the room reads full from the door and the back stayed quiet."});
+
+  /* ── 2. occasions ──
+     Soft by design: a celebration only counts against you when something nicer
+     was genuinely free. On a full room you seat the party and move on. */
+  const celebs=seated.filter(isCelebration);
+  let occEarn=0;
+  celebs.forEach(r=>{
+    const a=S.assign[r.id], chosen=matchOption(a.tables);
+    const got=chosen?niceness(chosen,r.party):0;
+    const opts=optionsFor(r.party,a.start,a.end-a.start,r.id).filter(o=>reasonable(o,r.party));
+    const best=opts.length?Math.max(0,...opts.map(o=>niceness(o,r.party))):0;
+    const pick=opts.filter(o=>niceness(o,r.party)===best).sort((x,y)=>x.rank-y.rank)[0];
+    const where=`<span class="mono">${a.tables.join("+")}</span>`;
+    if(a.tables.some(t=>T[t].zone==="50s")||chosen&&chosen.bar){
+      nt.occ.push({k:"bad",t:`<b>${esc(r.name)}</b> — ${esc(r.tag)} — went to ${where}. ${chosen&&chosen.bar?"The bar":"A door table"} is the one place a celebration should never land${best?`. <span class="mono">${pick.key}</span> was free.`:"."}`});
+    } else if(got>=2){ occEarn++;
+      nt.occ.push({k:"good",t:`<b>${esc(r.name)}</b>'s ${esc(r.tag).toLowerCase()} on ${where} — end of the run, open on one side. That is the seat.`});
+    } else if(got===1){ occEarn+= best>=2?.7:1;
+      nt.occ.push({k:best>=2?"warn":"good",t:`<b>${esc(r.name)}</b>'s ${esc(r.tag).toLowerCase()} on ${where} — decent${best>=2?`, though <span class="mono">${pick.key}</span> was open and better.`:"."}`});
+    } else if(best===0){ occEarn++;
+      nt.occ.push({k:"good",t:`<b>${esc(r.name)}</b> — ${esc(r.tag)} — on ${where}. Nothing nicer was free at ${fmt(r.time)}; not counted against you.`});
+    } else {
+      nt.occ.push({k:"bad",t:`<b>${esc(r.name)}</b> — ${esc(r.tag)} — squeezed onto ${where} with <span class="mono">${pick.key}</span> sitting open. Read the book before you place the deuces.`});
+    }
+  });
+  const occPct=celebs.length?occEarn/celebs.length:1;
+  if(!celebs.length) nt.occ.push({k:"good",t:"No birthdays or anniversaries on the book tonight."});
+
+  /* ── combos: what got pre-flipped ── */
+  const comboRes=seated.filter(r=>S.assign[r.id].tables.length>1 && !S.assign[r.id].tables.every(t=>T[t].zone==="bar"));
+  const waived=new Set();
+  let cEarn=0,cPoss=0;
+  comboRes.forEach(r=>{
+    const a=S.assign[r.id];
+    for(let i=0;i<a.tables.length;i++) for(let j=i+1;j<a.tables.length;j++)
+      waived.add([a.tables[i],a.tables[j]].sort().join("|"));
+    let flipped=0;
+    a.tables.forEach(t=>{ cPoss++;
+      if((bkAll[t]||[]).some(b=>b.id!==r.id && b.end<=a.start)) { cEarn++; flipped++; } });
+    if(flipped===a.tables.length)
+      nt.combo.push({k:"good",t:`<span class="mono">${a.tables.join("+")}</span> flipped clean into <b>${esc(r.name)}</b>'s ${r.party}-top at ${fmt(r.time)}. That is the whole trick.`});
+    else if(flipped===0)
+      nt.combo.push({k:"warn",t:`<span class="mono">${a.tables.join("+")}</span> sat empty until <b>${esc(r.name)}</b> at ${fmt(r.time)}. That's ${a.tables.length} tables held all night — you had room for a turn first.`});
+    else
+      nt.combo.push({k:"warn",t:`Only ${flipped} of ${a.tables.length} in <span class="mono">${a.tables.join("+")}</span> turned before <b>${esc(r.name)}</b> at ${fmt(r.time)}.`});
+  });
+  const comboPct=cPoss?cEarn/cPoss:1;
+  if(!cPoss) nt.combo.push({k:"good",t:"Nothing needed a combination tonight."});
+
+  /* ── 2. spread ── */
+  let spreadHits=0;
+  seated.forEach(r=>{
+    const a=S.assign[r.id];
+    if(a.tables.every(t=>T[t].zone==="bar")) return;
+    a.tables.forEach(t=>NEIGHBOURS[t].forEach(nb=>{
+      if(a.tables.includes(nb)) return;
+      if(waived.has([t,nb].sort().join("|"))) return;
+      (bkAll[nb]||[]).forEach(b=>{
+        if(b.id===r.id||b.start>a.start) return;
+        if(Math.abs(b.start-a.start)>CONFIG.spreadWindow) return;
+        const opts=optionsFor(r.party,a.start,a.end-a.start,r.id).filter(o=>reasonable(o,r.party));
+        const clean=opts.filter(o=>o.tables.every(x=>NEIGHBOURS[x].every(y=>
+          !(bkAll[y]||[]).some(z=>z.id!==r.id&&Math.abs(z.start-a.start)<=CONFIG.spreadWindow))));
+        if(!clean.length) return;
+        spreadHits++;
+        nt.spread.push({k:"bad",t:`<span class="mono">${t}</span> and <span class="mono">${nb}</span> both sat around ${fmt(a.start)} — shoulder to shoulder with <span class="mono">${clean[0].key}</span> wide open.`});
+      });
+    }));
+  });
+  const spreadPct=clamp(1-spreadHits/Math.max(2,Math.round(seated.length*.30)),0,1);
+  if(!spreadHits) nt.spread.push({k:"good",t:"Nothing double-seated. Guests got air on both sides."});
+
+  /* ── 3. pacing ──
+     The host does not choose reservation times. If four parties are booked at
+     7:00 they all get sat at 7:00. What the host controls is WHICH SECTION each
+     one lands in — so a tight pair only counts against them when another
+     section could have taken it. One server up means nothing to spread, and
+     the dimension correctly comes back free. */
+  const floorSecKeys=night.secDefs.filter(s=>s.key!=="sB").map(s=>s.key);
+  let paceCost=0,paceAllow=0,forced=0;
+  const couldHaveSpread=(r,secKey)=>{
+    const a=S.assign[r.id];
+    return optionsFor(r.party,a.start,a.end-a.start,r.id).some(o=>{
+      const k=night.section[o.tables[0]];
+      return k!==secKey && floorSecKeys.includes(k) && reasonable(o,r.party);
+    });
+  };
+  night.secDefs.filter(s=>s.key!=="sB").forEach(sec=>{
+    const mine=seated.filter(r=>night.section[S.assign[r.id].tables[0]]===sec.key)
+                     .sort((a,b)=>S.assign[a.id].start-S.assign[b.id].start);
+    for(let i=1;i<mine.length;i++){
+      const g=S.assign[mine[i].id].start-S.assign[mine[i-1].id].start;
+      if(g>=CONFIG.pacing.tight) continue;
+      paceAllow++;
+      if(!couldHaveSpread(mine[i],sec.key)){ forced++; continue; }
+      if(g<CONFIG.pacing.doubleSat){ paceCost+=2;
+        nt.pace.push({k:"bad",t:`<b>${sec.name}</b> double-sat at ${fmt(S.assign[mine[i].id].start)} — <span class="mono">${S.assign[mine[i-1].id].tables.join("+")}</span> then <span class="mono">${S.assign[mine[i].id].tables.join("+")}</span>, ${g} minutes apart, with another section open. Two tables order at once.`});}
+      else { paceCost+=1;
+        nt.pace.push({k:"warn",t:`<b>${sec.name}</b> tight at ${fmt(S.assign[mine[i].id].start)} — ${g} minutes between seatings and somewhere else was free. Their courses run together.`});}
+    }
+  });
+  const pacePct=clamp(1-paceCost/Math.max(3,Math.round(paceAllow*1.1)),0,1);
+  if(forced) nt.pace.push({k:"good",t:`${forced} tight seating${forced>1?"s":""} the book forced on you — same time, nowhere else to put them. Not counted.`});
+  if(!paceCost) nt.pace.push({k:"good",t: night.servers===1
+    ? "One server up, so there is no section to spread across. Pacing comes free tonight."
+    : "You spread the rushes across sections. Nobody got double-sat."});
+
+  /* ── 4. server balance ──
+     Sections are not equal by construction: four 6-tops cannot produce what
+     eight banquette tables produce. So each section is measured against its own
+     fair share of the room's capacity, weighted by the average party each table
+     actually took in August (deuce tables ~2.0, four- and six-tops ~3.4). */
+  const floorSecs=night.secDefs.filter(s=>s.key!=="sB");
+  const wOf=id=>T[id].seats<=2?2.0:3.4;
+  const secTables=sec=>CONFIG.tables.filter(t=>night.section[t.id]===sec.key).map(t=>t.id);
+  const caps=floorSecs.map(sec=>sum(secTables(sec).map(wOf)));
+  const capTotal=sum(caps)||1;
+  const totalCov=sum(seated.filter(r=>floorSecs.some(s=>s.key===night.section[S.assign[r.id].tables[0]]))
+                           .map(r=>r.party))||1;
+  const perSec=floorSecs.map((sec,i)=>{
+    const mine=seated.filter(r=>night.section[S.assign[r.id].tables[0]]===sec.key);
+    const cov=sum(mine.map(r=>r.party));
+    const fair=caps[i]/capTotal;
+    return {sec,covers:cov,tables:mine.length,fair,share:cov/totalCov,target:Math.round(fair*totalCov)};
+  });
+  const dev=perSec.map(p=>Math.abs(p.share-p.fair)/p.fair);
+  const balPct=floorSecs.length<2?1:clamp(1-(sum(dev)/dev.length)/.30,0,1);
+  perSec.forEach(p=>{
+    const off=p.covers-p.target;
+    nt.bal.push({k:Math.abs(off)>Math.max(6,p.target*.18)?"warn":"good",
+      t:`<b>${p.sec.name}</b> — ${p.covers} covers over ${p.tables} tables. Fair share of this room is ${p.target}${off?` (${off>0?"+":""}${off})`:""}.`});
+  });
+  if(night.servers===1) nt.bal.push({k:"good",t:"One server tonight, so balance is free. Pacing is the whole job."});
+
+  /* ── 5. walk-ins & up-bys ── */
+  let wEarn=0,wPoss=0;
+  S.wDecisions.forEach(d=>{
+    wPoss++;
+    if(d.action==="decline"){
+      if(d.had) nt.walk.push({k:"bad",t:`Turned away <b>${esc(d.w.name)}</b> (${d.w.party}) at ${fmt(d.w.time)} with ${d.had} spot${d.had>1?"s":""} still sellable. That's revenue on the sidewalk.`});
+      else { wEarn+=1; nt.walk.push({k:"good",t:`Turned away <b>${esc(d.w.name)}</b> at ${fmt(d.w.time)} — the room genuinely had nothing. Right call.`}); }
+      return;
+    }
+    const back=d.tables.some(t=>T[t].zone==="50s");
+    let pts=1;
+    if(d.squeeze) nt.walk.push({k:"good",t:`Squeezed <b>${esc(d.w.name)}</b> (${d.w.party}) onto <span class="mono">${d.tables.join("+")}</span> in a ${d.win}-minute window. Exactly the call.`});
+    else if(d.bar) nt.walk.push({k:"good",t:`<b>${esc(d.w.name)}</b> to the bar. That's what the stools are for — the book stays intact.`});
+    else if(back) nt.walk.push({k:"good",t:`<b>${esc(d.w.name)}</b> into the 50s. Deep tables absorb walk-ins without costing you a prime seat.`});
+    else {
+      const alt=walkinOptionsAt(d.w).filter(o=>o.bar||o.tables.some(t=>T[t].zone==="50s"));
+      if(alt.length){ pts=.6;
+        nt.walk.push({k:"warn",t:`<b>${esc(d.w.name)}</b> took <span class="mono">${d.tables.join("+")}</span>, a prime table, on a full turn — the bar or the 50s were open.`});}
+      else { pts=.85;
+        nt.walk.push({k:"warn",t:`<b>${esc(d.w.name)}</b> on <span class="mono">${d.tables.join("+")}</span>. Fine, but check whether a shorter window would have done it.`});}
+    }
+    wEarn+=pts;
+  });
+  const walkPct=wPoss?wEarn/wPoss:1;
+  if(!wPoss) nt.walk.push({k:"good",t:"No walk-ins reached the stand tonight."});
+
+  /* ── 6. door calls (medium & hard) ──
+     Seat them, or make them wait — and what that cost. */
+  const door=doorScore(nt);
+
+  const dims = streaming() ? [
+    {name:"Door calls",                 weight:22,pct:door.pct, notes:nt.door},
+    {name:"Visibility &amp; fill order",weight:17,pct:visPct,   notes:nt.vis},
+    {name:"Occasion tables",            weight:8, pct:occPct,   notes:nt.occ},
+    {name:"Spread",                     weight:12,pct:spreadPct,notes:nt.spread},
+    {name:"Pacing",                     weight:12,pct:pacePct,  notes:nt.pace},
+    {name:"Combo readiness",            weight:11,pct:comboPct, notes:nt.combo},
+    {name:"Server balance",             weight:8, pct:balPct,   notes:nt.bal},
+    {name:"Walk-ins &amp; up-bys",      weight:10,pct:walkPct,  notes:nt.walk}
+  ] : [
+    {name:"Visibility &amp; fill order",weight:22,pct:visPct,notes:nt.vis},
+    {name:"Occasion tables",            weight:10,pct:occPct,notes:nt.occ},
+    {name:"Spread",                     weight:16,pct:spreadPct,notes:nt.spread},
+    {name:"Pacing",                     weight:16,pct:pacePct,notes:nt.pace},
+    {name:"Combo readiness",            weight:14,pct:comboPct,notes:nt.combo},
+    {name:"Server balance",             weight:10,pct:balPct,notes:nt.bal},
+    {name:"Walk-ins &amp; up-bys",      weight:12,pct:walkPct,notes:nt.walk}
+  ];
+  const unseated=R.length-seated.length;
+  let total=sum(dims.map(d=>d.weight*d.pct));
+  if(unseated) total*= (1-Math.min(.5,unseated/R.length));
+  const g=total>=93?"A":total>=87?"A−":total>=82?"B+":total>=76?"B":total>=70?"B−":
+          total>=64?"C+":total>=57?"C":total>=50?"C−":total>=40?"D":"F";
+  return {dims,total:Math.round(total),grade:g,unseated,model:modelPlan()};
+}
+/* ═══════════════════════════════════════════ door scoring
+   Judged on the call, not the outcome: holding is right when the party is not
+   all there or the room genuinely has nothing, and wrong when a good table was
+   sitting empty and you left a complete party standing.                      */
+function doorScore(nt){
+  if(!streaming()){ nt.door.push({k:"good",t:"Easy mode — the book arrives in order, so there are no door calls."});
+    return {pct:1}; }
+  let earn=0,poss=0;
+  const seen=new Set();
+  S.doorLog.forEach(l=>{
+    const src=srcOf(l.id), d=doorOf(l.id);
+    if(l.action==="walked-out"){
+      poss++; seen.add(l.id);
+      nt.door.push({k:"bad",t:`<b>${esc(src.name)}</b> (${src.party}) gave up and left after ${l.wait} minutes. That one is on the stand.`});
+      return;
+    }
+    if(l.action==="turn-away"){
+      poss++;
+      if(l.had){ nt.door.push({k:"bad",t:`Turned <b>${esc(src.name)}</b> away at ${fmt(l.at)} with ${l.had} spot${l.had>1?"s":""} sellable.`}); }
+      else { earn++; nt.door.push({k:"good",t:`Turned <b>${esc(src.name)}</b> away at ${fmt(l.at)} — the floor genuinely had nothing.`}); }
+      return;
+    }
+    if(l.action==="hold"){
+      poss++;
+      const o=l.hadOpts===undefined?null:l.hadOpts;
+      if(l.state==="inc"){ earn++;
+        nt.door.push({k:"good",t:`Held <b>${esc(src.name)}</b> until the party was complete. Right — a half party on a whole table is a table you cannot turn.`}); }
+      else if(l.state==="early"){ earn+=.9;
+        nt.door.push({k:"good",t:`Held <b>${esc(src.name)}</b> to their booking time. Safe, though an early seat is free money when the table is idle.`}); }
+      else if(!l.hadOpts){ earn++;
+        nt.door.push({k:"good",t:`Held <b>${esc(src.name)}</b> at ${fmt(l.at)} — nothing on the floor fitted. Nothing else you could do.`}); }
+      else {
+        nt.door.push({k:"bad",t:`Left <b>${esc(src.name)}</b> standing at ${fmt(l.at)} with the whole party there and ${l.hadOpts} table${l.hadOpts>1?"s":""} free. If it fits, seat it.`}); }
+      return;
+    }
+    if(l.action==="seat"){
+      poss++;
+      let pts=1;
+      const bits=[];
+      if(l.partial){
+        const busy=S.seatedCount>0 && night.type==="busy";
+        pts = busy?.25:.6;
+        bits.push({k:"warn",t:`Sat <b>${esc(src.name)}</b> with only ${l.present} of ${src.party} there. You have given a whole table to half a party${busy?" on a busy night":""}.`});
+      }
+      if(l.wait>25){ pts=Math.min(pts,.5);
+        bits.push({k:"bad",t:`<b>${esc(src.name)}</b> waited ${l.wait} minutes before you sat them.`}); }
+      else if(l.wait>12){ pts=Math.min(pts,.75);
+        bits.push({k:"warn",t:`<b>${esc(src.name)}</b> waited ${l.wait} minutes.`}); }
+      if(l.state==="late"&&l.wait<=5&&!l.partial)
+        bits.push({k:"good",t:`<b>${esc(src.name)}</b> came in ${src.arriveAt-src.time} late and you turned them straight around.`});
+      if(l.state==="early"&&l.wait===0&&!l.partial)
+        bits.push({k:"good",t:`Seated <b>${esc(src.name)}</b> early onto <span class="mono">${l.tables.join("+")}</span> — table was idle, so that is found revenue.`});
+      earn+=pts;
+      bits.slice(0,1).forEach(b=>nt.door.push(b));
+      return;
+    }
+  });
+  /* anyone still standing when service ended */
+  Object.values(S.door).forEach(d=>{
+    if(!d.seated&&!d.gone){ poss++;
+      nt.door.push({k:"bad",t:`<b>${esc(srcOf(d.id).name)}</b> never got seated.`}); }
+  });
+  const pct=poss?clamp(earn/poss,0,1):1;
+  if(pct>=.9) nt.door.push({k:"good",t:"You read the door well — complete parties went straight down, part-parties waited."});
+  return {pct};
+}
+
+/* options a walk-in HAD at its moment — recomputed for the scorecard */
+function walkinOptionsAt(w){
+  const save=S.assign; S.assign={};
+  for(const k in save) if(!(k.startsWith("W") && +k.slice(1) > +w.id.slice(1))) S.assign[k]=save[k];
+  delete S.assign[w.id];
+  const o=walkinOptions(w); S.assign=save;
+  return o.full.concat(o.sq);
+}
+
+/* ═══════════════════════════════════════════ render */
+function render(){ renderHeader();renderBook();renderFloor();renderAssignBar();renderQuiz();renderSide();renderTimeline(); }
+const SECFILL={s1:"var(--s1-soft)",s2:"var(--s2-soft)",s3:"var(--s3-soft)",sB:"var(--sB-soft)"};
+const SECINK ={s1:"var(--s1)",s2:"var(--s2)",s3:"var(--s3)",sB:"var(--sB)"};
+
+function renderHeader(){
+  const c=document.getElementById("nightChip"); c.dataset.t=night.type;
+  document.getElementById("chipType").textContent=night.label;
+  document.getElementById("chipDetail").innerHTML=
+    `${night.servers} server${night.servers>1?"s":""} + bar &middot; ${night.covers} covers &middot; ${night.reservations.length} on the book`;
+  document.getElementById("seedBtn").textContent="#"+String(night.seed).padStart(4,"0");
+  document.querySelectorAll("[data-mode]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.mode===night.mode?"true":"false"));
+  const labels = streaming()
+    ? ["Brief","Work the door","Scorecard"]
+    : ["Build the plan","Run service","Scorecard"];
+  document.getElementById("steps").innerHTML=labels.map((l,i)=>{
+    const n=i+1, on=(streaming()?(n===2?S.phase===2:n===S.phase):n===S.phase);
+    return `<li data-on="${on?1:""}" data-done="${n<S.phase?1:""}"><span class="n mono">${n}</span> ${l}</li>`;
+  }).join("");
+  const wb=document.getElementById("windowsBtn");
+  wb.style.display=S.phase===3?"none":"";
+  wb.textContent=S.showWindows?"Hide open windows":"Show open windows";
+  wb.setAttribute("aria-pressed",S.showWindows?"true":"false");
+  const w=streaming()?null:currentWalkin();
+  document.getElementById("floorClock").textContent =
+    S.phase===3?"end of service"
+    : streaming()? (S.cur?"the room at "+fmt(S.clock):"end of service")
+    : S.phase===1?"planning — whole book on the floor"
+    : w?"the room at "+fmt(w.time):"end of service";
+}
+
+function renderBook(){
+  const el=document.getElementById("book");
+  const done=night.reservations.filter(r=>S.assign[r.id]).length;
+  document.getElementById("bookTitle").textContent=S.phase===1?"The book":"The book (locked)";
+  document.getElementById("bookCount").textContent=`${done}/${night.reservations.length} seated`;
+  el.innerHTML=night.reservations.map(r=>{
+    const a=S.assign[r.id];
+    return `<button class="res" data-res="${r.id}" aria-selected="${S.selected===r.id}">
+      <span class="mono t">${fmt(r.time)}<span class="pax"> ·${r.party}</span></span>
+      <span><span class="who">${r.vip?'<span class="tag vip">'+esc(r.vip.split(" ")[0].toUpperCase())+'</span>':""}${esc(r.name)}</span>
+      ${r.tag?`<span class="note"><span class="tag ${r.tagc}">${esc(r.tag)}</span></span>`:""}</span>
+      <span class="mono at ${a?"":"none"}">${a?a.tables.join("+"):"—"}</span></button>`;
+  }).join("");
+  if(streaming()){
+    /* colour the book by how each party actually turned up */
+    el.querySelectorAll("[data-res]").forEach(b=>{
+      const d=doorOf(b.dataset.res); if(!d) return;
+      const seen=d.arrivedAt<=S.clock;
+      if(d.seated){ b.style.opacity=".45"; b.style.borderLeft="3px solid var(--good)"; }
+      else if(d.gone){ b.style.opacity=".4"; b.style.borderLeft="3px solid var(--bad)";
+        b.style.textDecoration="line-through"; }
+      else if(seen){ const st=doorState(b.dataset.res,S.clock);
+        b.style.borderLeft="3px solid var("+(st==="inc"?"--inc":st==="late"?"--late":"--ready")+")";
+        b.style.background="var("+(st==="inc"?"--inc-soft":st==="late"?"--late-soft":"--ready-soft")+")"; }
+      b.style.cursor="default";
+    });
+    return;
+  }
+  el.querySelectorAll("[data-res]").forEach(b=>b.onclick=()=>{
+    const rid=b.dataset.res;
+    if(S.assign[rid]&&S.phase===1) return unassign(rid);
+    selectRes(rid);
+  });
+}
+
+function renderFloor(){
+  const svg=document.getElementById("floor");
+  const stream=streaming();
+  const w=stream?null:currentWalkin();
+  /* whoever we are seating this instant: a walk-in in easy mode, the party at
+     the door in medium and hard */
+  const live = S.phase!==2 ? null
+             : stream ? (S.cur?{time:S.clock,id:S.cur.id}:null)
+             : (w?{time:w.time,id:w.id}:null);
+  const now=live?live.time:null;
+  const res=S.selected?night.reservations.find(r=>r.id===S.selected):null;
+  const bk=bookings(S.selected);
+  const bkAll=bookings(null);
+  const wo=live?(stream?placeOptions(live.id):walkinOptions(w)):null;
+  const sqT=wo?new Set(wo.sq.flatMap(o=>o.tables)):new Set();
+  const fullT=wo?new Set(wo.full.flatMap(o=>o.tables)):new Set();
+
+  let g=`<rect class="wall" x="24" y="24" width="1112" height="372" rx="5"/>
+   <rect class="fixture" x="826" y="60" width="306" height="26" rx="4"/>
+   <text class="fixture-lbl" x="979" y="78">BAR</text>
+   <rect class="fixture" x="34" y="34" width="330" height="18" rx="3"/>
+   <text class="fixture-lbl" x="199" y="47">BANQUETTE</text>
+   <rect class="fixture" x="34" y="368" width="330" height="18" rx="3"/>
+   <text class="fixture-lbl" x="199" y="381">BANQUETTE</text>
+   <path d="M1016 396 v-26 h104 v26" fill="none" stroke="var(--rule-strong)" stroke-width="1.5" stroke-dasharray="4 3"/>
+   <text class="fixture-lbl" x="1068" y="389">ENTRANCE</text>
+   <rect class="fixture" x="856" y="362" width="132" height="18" rx="3"/>
+   <text class="fixture-lbl" x="922" y="375">HOST STAND</text>
+   <text class="fixture-lbl" x="946" y="250" opacity=".85">50s — BY THE DOOR</text>`;
+
+  CONFIG.tables.forEach(t=>{
+    const sec=night.section[t.id], bar=t.zone==="bar";
+    let fill=SECFILL[sec]||"var(--surface-2)", stroke=SECINK[sec]||"var(--rule-strong)",
+        ink="var(--ink)", dash="", ring="", sub="", sw=1.25, gop=1;
+    const here=bkAll[t.id]||[];
+    const occ=now!==null?here.find(b=>now>=b.start&&now<b.end):null;
+
+    if(S.phase===1&&here.length){ fill=SECINK[sec]; ink="var(--surface)";
+      sub=here.length===1?fmt(here[0].start).replace(/:00/,""):here.length+" turns"; }
+    if(S.phase!==1&&occ){ fill=SECINK[sec]; ink="var(--surface)"; sub="til "+fmtShort(occ.end); }
+
+    if(S.phase===1&&res){
+      const d=CONFIG.turn(res.party,bar);
+      const ok=tableFree(bk,t.id,res.time,res.time+d);
+      if(!ok&&!S.pending.includes(t.id)){ fill="var(--sunken)"; ink="var(--faint)"; stroke="var(--rule)";
+        sub="taken"; gop=.38; }        // recede, so what is clickable reads at a glance
+    }
+    if(S.phase===2&&live&&!occ){
+      if(fullT.has(t.id)){ ring=1; stroke=SECINK[sec]; }
+      else if(sqT.has(t.id)){ dash='stroke-dasharray="5 3"'; sw=2; stroke="var(--warn)";
+        ink="var(--warn)"; sub=windowFrom(bkAll,t.id,now)+"m"; }
+      else { fill="var(--sunken)"; ink="var(--faint)"; stroke="var(--rule)"; gop=.38; }
+    }
+    if(S.showWindows&&S.phase===1&&!S.selected){
+      const gp=biggestGap(t.id);
+      if(gp){ dash='stroke-dasharray="5 3"'; stroke="var(--warn)"; sw=1.75;
+        sub=gp.len+"m @"+fmtShort(gp.at); if(!here.length) ink="var(--warn)"; }
+    }
+    const picked=S.pending.includes(t.id);
+
+    if(bar){
+      const rr=t.r;
+      g+=`<g class="tbl" data-t="${t.id}" tabindex="0" role="button" opacity="${gop}" aria-label="Bar seat ${t.id}">
+        ${picked?`<circle cx="${t.x}" cy="${t.y}" r="${rr+5}" fill="none" stroke="var(--pick)" stroke-width="2.5"/>`:
+          ring?`<circle cx="${t.x}" cy="${t.y}" r="${rr+4}" fill="none" stroke="var(--good)" stroke-width="2"/>`:""}
+        <circle class="body" cx="${t.x}" cy="${t.y}" r="${rr}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${dash}/>
+        <text class="id" style="font-size:11px" x="${t.x}" y="${t.y+4}" fill="${ink}">${t.id}</text></g>`;
+    } else {
+      g+=`<g class="tbl" data-t="${t.id}" tabindex="0" role="button" opacity="${gop}" aria-label="Table ${t.id}, ${t.seats} seats">
+        ${picked?`<rect x="${t.x-t.w/2-5}" y="${t.y-t.h/2-5}" width="${t.w+10}" height="${t.h+10}" rx="9" fill="none" stroke="var(--pick)" stroke-width="2.5"/>`:
+          ring?`<rect x="${t.x-t.w/2-4}" y="${t.y-t.h/2-4}" width="${t.w+8}" height="${t.h+8}" rx="9" fill="none" stroke="var(--good)" stroke-width="2"/>`:""}
+        <rect class="body" x="${t.x-t.w/2}" y="${t.y-t.h/2}" width="${t.w}" height="${t.h}" rx="6"
+          fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${dash}/>
+        <text class="id" x="${t.x}" y="${t.y+(sub?-2:5)}" fill="${ink}">${t.id}</text>
+        <text class="sub" x="${t.x}" y="${t.y+12}" fill="${ink}" opacity="${sub?.92:.5}">${sub||t.seats+" top"}</text></g>`;
+    }
+  });
+  svg.innerHTML=g;
+  svg.querySelectorAll("[data-t]").forEach(el=>{
+    el.onclick=()=>clickTable(el.dataset.t);
+    el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();clickTable(el.dataset.t);} };
+  });
+
+  document.getElementById("legend").innerHTML =
+    night.secDefs.map(s=>`<span><i style="background:${SECFILL[s.key]};border-color:${SECINK[s.key]}"></i>${s.name}${s.key==="sB"?" (B1–B8 + 50s)":""}</span>`).join("")
+    +(S.phase===2?`<span><i style="background:transparent;border-color:var(--good);border-width:2px"></i>Full turn</span>
+      <span><i style="background:transparent;border-color:var(--warn);border-width:2px;border-style:dashed"></i>Squeeze only</span>`:"")
+    +`<span style="margin-left:auto;color:var(--faint)">Fill order <span class="mono">${PRIORITY.slice(0,8).join(" ")}…</span></span>`;
+}
+
+function biggestGap(tid){
+  const list=bookings(null)[tid]||[];
+  if(!list.length) return null;
+  let cur=CONFIG.serviceStart,best=null;
+  const push=(a,b)=>{const l=b-a; if(l>=CONFIG.squeezeMin&&(!best||l>best.len)) best={at:a,len:l};};
+  list.forEach(b=>{ push(cur,b.start-CONFIG.reset); cur=b.end+CONFIG.reset; });
+  push(cur,CONFIG.lastSeating);
+  return best;
+}
+
+/* ── the question ─────────────────────────────────────────────────── */
+const STATE_COPY={
+  ready:["All here","Whole party is at the door, on time."],
+  late :["Running late","They booked earlier than this."],
+  inc  :["Part of the party","The rest are still coming."],
+  early:["Early","They are ahead of their booking."],
+  walk :["Walk-in","No reservation."]
+};
+function renderQuiz(){
+  const host=document.getElementById("quiz");
+  if(!streaming()||S.phase!==2||!S.cur){ host.innerHTML=""; host.style.display="none"; return; }
+  host.style.display="";
+  const e=S.cur, d=doorOf(e.id), src=srcOf(e.id);
+  const st=doorState(e.id,S.clock), [stName,stWhy]=STATE_COPY[st];
+  const o=placeOptions(e.id);
+  const canSeat=o.full.length+o.sq.length>0;
+  const waited=waitedBy(e.id,S.clock);
+  const also=alsoWaiting();
+  const total=night.reservations.length+night.walkins.length;
+  const doneN=Object.values(S.door).filter(x=>x.seated||x.gone).length;
+
+  let sub;
+  if(st==="inc")   sub=`<b>${d.present} of ${src.party}</b> here &middot; booked ${fmt(src.time)} &middot; the last ${src.party-d.present===1?"one is":(src.party-d.present)+" are"} still coming`;
+  else if(st==="late") sub=`Booked <b>${fmt(src.time)}</b> &middot; <b>${src.arriveAt-src.time} minutes late</b>`;
+  else if(st==="early")sub=`Booked <b>${fmt(src.time)}</b> &middot; <b>${src.time-S.clock} minutes early</b>`;
+  else if(st==="walk") sub=`No booking &middot; ${new Set(o.full.flatMap(x=>x.tables)).size} table${o.full.length===1?"":"s"} free for a full turn, ${new Set(o.sq.flatMap(x=>x.tables)).size} on a squeeze`;
+  else sub=`Booked <b>${fmt(src.time)}</b> &middot; all ${src.party} at the door`;
+  if(waited>0) sub+=` &middot; <b style="color:var(--bad)">waiting ${waited} min</b>`;
+
+  let opts;
+  if(S.step==="place"){
+    const opt=matchOption(S.pending);
+    const seats=S.pending.reduce((s,t)=>s+T[t].seats,0);
+    const ok=opt&&opt.seats>=src.party;
+    opts=`<div class="placebar">
+      <span class="t">${S.pending.length
+        ? `<span class="mono">${S.pending.join(" + ")}</span> — ${seats} seat${seats>1?"s":""} for a party of ${src.party}${opt?"":" · not a legal combination"}`
+        : `Tap the table on the floor plan. Solid outline is a full turn, dashed amber is a squeeze.`}</span>
+      <span class="sp"></span>
+      ${S.pending.length?`<button class="btn" id="qClear">Clear</button>`:""}
+      <button class="btn primary" id="qConfirm" ${ok?"":"disabled"}>Seat at ${S.pending.join("+")||"…"}</button>
+      <button class="btn ghost" id="qBack">Back</button></div>`;
+  } else {
+    const holdLabel = st==="inc" ? "Hold for the rest of the party"
+                    : st==="early" ? `Hold until ${fmt(src.time)}`
+                    : "Hold at the door";
+    const holdWhy = st==="inc" ? "You will be asked again when they are all here."
+                  : st==="early" ? "You will be asked again at their booking time."
+                  : `You will be asked again in ${CONFIG.recheck} minutes.`;
+    opts=`<div class="opts">
+      <button class="opt go" id="qSeat" ${canSeat?"":"disabled"}>
+        <span class="k">Seat them now</span>
+        <span class="d">${canSeat?`Then pick the table — ${new Set(o.full.flatMap(x=>x.tables)).size} open, ${new Set(o.sq.flatMap(x=>x.tables)).size} squeeze`:"Nothing on the floor fits right now"}</span></button>
+      <button class="opt" id="qHold">
+        <span class="k">${holdLabel}</span><span class="d">${holdWhy}</span></button>
+      <button class="opt warn" id="qAway">
+        <span class="k">Turn them away</span>
+        <span class="d">${d.kind==="walkin"?"No room tonight.":"They lose the table."}</span></button></div>`;
+  }
+
+  host.innerHTML=`<div class="quiz">
+    <div class="quiz-top">
+      <span class="clock mono">${fmt(S.clock)}</span>
+      <span class="of">Party ${doneN+1} of ${total}</span>
+      ${also?`<span class="also">${also} more waiting at the door</span>`:""}
+    </div>
+    <div class="quiz-body">
+      <div class="guest">
+        <span class="nm">${esc(src.name)}</span>
+        <span class="sz">party of ${src.party}</span>
+        <span class="state ${st}">${stName}</span>
+        ${src.tag?`<span class="state ${isCelebration(src)?"inc":"early"}">${esc(src.tag)}</span>`:""}
+        ${src.vip?`<span class="state early">${esc(src.vip)}</span>`:""}
+      </div>
+      <p class="guest-sub">${sub}</p>
+      <p class="stem">${S.step==="place"
+        ? `Where are you seating ${esc(src.name)}?`
+        : `${esc(src.name)} is at the stand. What do you do?`}</p>
+      ${opts}
+    </div></div>`;
+
+  const b=id=>document.getElementById(id);
+  if(S.step==="place"){
+    if(b("qClear")) b("qClear").onclick=()=>{S.pending=[];render();};
+    b("qConfirm").onclick=doorConfirm;
+    b("qBack").onclick=()=>{S.step="decide";S.pending=[];render();};
+  } else {
+    if(canSeat) b("qSeat").onclick=doorSeat;
+    b("qHold").onclick=()=>doorHold(st);
+    b("qAway").onclick=doorTurnAway;
+  }
+}
+
+function renderAssignBar(){
+  const el=document.getElementById("assignbar");
+  if(streaming()&&S.phase===2){ el.innerHTML=`<span class="msg">${CONFIG.modes[night.mode].blurb}</span>
+    <span class="spacer"></span><span class="msg" style="color:var(--muted)">Seated ${S.seatedCount} &middot; ${S.walkedOut.length} walked out</span>`; return; }
+  if(S.phase===3){
+    el.innerHTML=`<span class="msg">Service is over. Read the scorecard, then open the model fill to compare.</span>
+      <span class="spacer"></span><button class="btn primary" id="again">Run another night</button>`;
+    document.getElementById("again").onclick=()=>newNight(); return;
+  }
+  if(S.phase===2){
+    const w=currentWalkin(); if(!w){ el.innerHTML=""; return; }
+    const seats=S.pending.reduce((s,t)=>s+T[t].seats,0);
+    const opt=matchOption(S.pending);
+    el.innerHTML=`<span class="msg">${S.pending.length
+      ? `Holding <b class="mono">${S.pending.join(" + ")}</b> — ${seats} seat${seats>1?"s":""} for ${w.party}${opt?"":" · not a legal combination"}`
+      : `Seat <b>${esc(w.name)}</b>, party of ${w.party}. Solid outline takes a full turn; dashed amber is a squeeze — say the time out loud.`}</span>
+      <span class="spacer"></span>
+      ${S.pending.length?`<button class="btn" id="clearP">Clear</button>`:""}
+      <button class="btn danger" id="decline">No room — turn them away</button>`;
+    const c=document.getElementById("clearP"); if(c)c.onclick=()=>{S.pending=[];render();};
+    document.getElementById("decline").onclick=declineWalkin; return;
+  }
+  const left=night.reservations.filter(r=>!S.assign[r.id]).length;
+  const res=S.selected?night.reservations.find(r=>r.id===S.selected):null;
+  const seats=S.pending.reduce((s,t)=>s+T[t].seats,0);
+  el.innerHTML=`<span class="msg">${
+    res?(S.pending.length
+      ? `<b class="mono">${S.pending.join(" + ")}</b> — ${seats} of ${res.party} seats. Add the next table along.`
+      : `<b>${esc(res.name)}</b>, ${res.party} at ${fmt(res.time)}${res.tag?` — <b style="color:${isCelebration(res)?"var(--s2)":"var(--muted)"}">${esc(res.tag)}</b>`:""}${res.vip?` — <b style="color:var(--pick)">${esc(res.vip)}</b>`:""} — ${CONFIG.turn(res.party,false)} minute turn. Click a table.`)
+    : left ? `Pick a reservation. Click a seated one to pull it back off the floor.`
+           : `Whole book is down. Check your open windows, then run service.`}</span>
+    <span class="spacer"></span>
+    ${S.pending.length?`<button class="btn" id="clearP">Clear</button>`:""}
+    <button class="btn" id="autofill">Fill the rest for me</button>
+    <button class="btn primary" id="go" ${left?"disabled":""}>Run service &rarr;</button>`;
+  const c=document.getElementById("clearP"); if(c)c.onclick=()=>{S.pending=[];render();};
+  document.getElementById("autofill").onclick=()=>{
+    S.assign=modelPlan(true);       // plans around what you have already seated
+    S.selected=null;S.pending=[];render();
+  };
+  document.getElementById("go").onclick=startService;
+}
+
+function sectionStats(){
+  const seated=night.reservations.filter(r=>S.assign[r.id]);
+  const rows=night.secDefs.map(sec=>{
+    const mine=seated.filter(r=>night.section[S.assign[r.id].tables[0]]===sec.key);
+    return {sec,cov:sum(mine.map(r=>r.party)),n:mine.length};
+  });
+  const max=Math.max(1,...rows.map(r=>r.cov));
+  return rows.map(r=>`<div style="margin-bottom:9px">
+    <div class="stat" style="border:0;padding:0 0 2px">
+      <span class="k" style="color:${SECINK[r.sec.key]};font-weight:600">${r.sec.name}</span>
+      <span class="v mono">${r.cov} cov · ${r.n} tbl</span></div>
+    <div class="bar"><i style="width:${Math.round(100*r.cov/max)}%;background:${SECINK[r.sec.key]}"></i></div></div>`).join("");
+}
+
+/* who is standing at the door, and what is coming next */
+function renderDoorPanel(el){
+  const waiting=S.queue.filter(q=>q.t<=S.clock&&!doorOf(q.id).seated&&!doorOf(q.id).gone)
+    .map(q=>q.id).filter(id=>!S.cur||id!==S.cur.id);
+  const soon=night.reservations.filter(r=>!doorOf(r.id).seated&&!doorOf(r.id).gone
+      &&(!S.cur||r.id!==S.cur.id)&&r.arriveAt>S.clock)
+    .sort((a,b)=>a.arriveAt-b.arriveAt).slice(0,7);
+  const row=id=>{
+    const d=doorOf(id),src=srcOf(id),st=doorState(id,S.clock),wt=waitedBy(id,S.clock);
+    return `<div class="dr ${st}"><div><div class="nm">${esc(src.name)} · ${src.party}</div>
+      <div class="sub">${st==="inc"?`${d.present} of ${src.party} here`
+        :st==="late"?`booked ${fmt(src.time)}`
+        :st==="walk"?"walk-in":`booked ${fmt(src.time)}`}</div></div>
+      <div class="w">${wt>0?wt+"m":"—"}</div></div>`;
+  };
+  el.innerHTML=`
+    <div class="card"><div class="card-hd"><h2>At the door</h2>
+      <span class="count">${waiting.length} waiting</span></div>
+      <div class="door">${waiting.length?waiting.map(row).join(""):`<div class="door-empty">Nobody else waiting.</div>`}</div></div>
+
+    <div class="card" style="margin-top:12px"><div class="card-hd"><h2>Coming up</h2></div>
+      <div class="door">${soon.length?soon.map(r=>
+        `<div class="dr"><div><div class="nm">${esc(r.name)} · ${r.party}</div>
+         <div class="sub">booked ${fmt(r.time)}${r.tag?" · "+esc(r.tag):""}</div></div>
+         <div class="w" style="color:var(--muted)">${fmt(r.arriveAt)}</div></div>`).join("")
+        :`<div class="door-empty">That's the whole book.</div>`}</div></div>
+
+    <div class="card" style="margin-top:12px"><div class="card-hd"><h2>Sections</h2></div>
+      <div class="card-bd">${sectionStats()}</div></div>
+
+    <div class="card" style="margin-top:12px"><div class="card-hd"><h2>Tonight</h2></div><div class="card-bd">
+      <div class="stat"><span class="k">Seated</span><span class="v mono">${S.seatedCount}</span></div>
+      <div class="stat"><span class="k">Walked out</span><span class="v mono" style="color:${S.walkedOut.length?"var(--bad)":"inherit"}">${S.walkedOut.length}</span></div>
+      <div class="stat"><span class="k">Celebrations</span><span class="v mono">${night.reservations.filter(isCelebration).length}</span></div>
+    </div></div>`;
+}
+
+function renderSide(){
+  const el=document.getElementById("side");
+  if(S.phase===3){ el.innerHTML=scorecardHTML(); return; }
+  if(S.phase===2){
+    if(streaming()) return renderDoorPanel(el);
+    const w=currentWalkin(), done=S.wDecisions.length, tot=night.walkins.length;
+    const o=w?walkinOptions(w):null;
+    el.innerHTML=`${w?`<div class="walkin">
+      <div class="hd"><span class="time mono">${fmt(w.time)}</span><span class="lbl">Walk-in ${done+1} of ${tot}</span></div>
+      <div class="body">A party of <b>${w.party}</b> under <b>${esc(w.name)}</b> at the stand, no reservation.</div>
+      <div class="body" style="margin:0"><span class="pill ok">${o.full.length} full turn${o.full.length===1?"":"s"}</span>
+      <span class="pill sq">${o.sq.length} squeeze${o.sq.length===1?"":"s"}</span></div></div>`:""}
+      <div class="card" style="margin-top:12px"><div class="card-hd"><h2>Sections</h2></div>
+      <div class="card-bd">${sectionStats()}</div></div>
+      ${S.wDecisions.length?`<div class="card" style="margin-top:12px"><div class="card-hd"><h2>Your calls</h2></div>
+        <div class="card-bd"><ul class="notes">${S.wDecisions.map(d=>
+          `<li data-k="${d.action==="decline"?(d.had?"bad":"good"):"good"}">${fmt(d.w.time)} · ${d.w.party}-top —
+          ${d.action==="decline"?"turned away":`<span class="mono">${d.tables.join("+")}</span>${d.squeeze?` <span class="pill sq">${d.win}m</span>`:""}`}</li>`
+        ).join("")}</ul></div></div>`:""}`;
+    return;
+  }
+  const seated=night.reservations.filter(r=>S.assign[r.id]);
+  const gaps=CONFIG.tables.map(t=>({id:t.id,g:biggestGap(t.id)})).filter(x=>x.g).sort((a,b)=>b.g.len-a.g.len);
+  el.innerHTML=`
+    <div class="card"><div class="card-hd"><h2>Tonight</h2></div><div class="card-bd">
+      <div class="stat"><span class="k">Type</span><span class="v">${night.label}</span></div>
+      <div class="stat"><span class="k">On the floor</span><span class="v">${night.servers} + bar</span></div>
+      <div class="stat"><span class="k">Covers booked</span><span class="v mono">${night.covers}</span></div>
+      <div class="stat"><span class="k">Walk-ins expected</span><span class="v mono">${night.walkins.length}</span></div>
+      <div class="stat"><span class="k">Celebrations</span><span class="v mono">${night.reservations.filter(isCelebration).length}</span></div>
+      <div class="stat"><span class="k">Planned</span><span class="v mono">${seated.length}/${night.reservations.length}</span></div>
+      <div class="bar"><i style="width:${Math.round(100*seated.length/night.reservations.length)}%;background:var(--ink)"></i></div>
+    </div></div>
+    <div class="card" style="margin-top:12px"><div class="card-hd"><h2>Sections</h2></div>
+      <div class="card-bd">${sectionStats()}</div></div>
+    <div class="card" style="margin-top:12px"><div class="card-hd"><h2>Up-by windows</h2>
+      <span class="count">${gaps.length} spot${gaps.length===1?"":"s"}</span></div><div class="card-bd">
+      ${gaps.length?`<ul class="notes">${gaps.slice(0,7).map(x=>
+        `<li data-k="${x.g.len>=100?"good":"warn"}"><span class="mono">${x.id}</span> — ${x.g.len} min from ${fmt(x.g.at)}${x.g.len<=CONFIG.squeezeMax?" · sell it as a squeeze":""}</li>`).join("")}</ul>`
+      :`<p style="font-size:12px;color:var(--muted);margin:2px 0">Seat some reservations first — windows open up between the blocks you create.</p>`}
+      <div class="callout">A ${CONFIG.squeezeMin}–${CONFIG.squeezeMax} minute window is the one you sell out loud:
+      <em>"I can squeeze you in — I'd just need the table back by 7:45."</em> The bar takes the rest.</div>
+    </div></div>`;
+}
+
+function renderTimeline(){
+  const el=document.getElementById("timeline");
+  const span=CONFIG.serviceEnd-CONFIG.serviceStart, pct=m=>100*(m-CONFIG.serviceStart)/span;
+  const bk=bookings(null), ticks=[];
+  for(let m=CONFIG.serviceStart;m<CONFIG.serviceEnd;m+=60) ticks.push(m);
+  let html=`<div class="tl-row head"><div class="tl-name lbl">Table</div>
+    <div class="tl-lane">${ticks.map(m=>`<div class="tl-tick mono">${fmtShort(m)}</div>`).join("")}</div></div>`;
+  const ZONES=[["20s","Banquette — 20s"],["10s","Banquette — 10s"],["40s","Middle — 40s"],
+               ["30s","Middle — 30s"],["50s","50s — by the door"],["bar","Bar"]];
+  ZONES.forEach(([z,label])=>{
+    html+=`<div class="tl-row zone"><div class="tl-name">${label}</div><div class="tl-lane"></div></div>`;
+    CONFIG.runs[z].forEach(id=>{
+      const t=T[id], sec=night.section[id];
+      const blocks=(bk[id]||[]).map(b=>{
+        const lab=b.kind==="walkin"?"WALK "+b.src.party:b.src.name.slice(0,8)+" "+b.src.party;
+        return `<div class="blk ${b.kind==="walkin"?"walk":""}"
+          style="left:${pct(b.start)}%;width:${pct(b.end)-pct(b.start)}%;background:${SECINK[sec]}"
+          title="${esc(b.src.name)} · ${b.src.party} · ${fmt(b.start)}–${fmt(b.end)}">${esc(lab)}</div>`;}).join("");
+      let gapEl="";
+      const gp=biggestGap(id);
+      if(gp&&S.phase!==3) gapEl=`<div class="gap" style="left:${pct(gp.at)}%;width:${pct(gp.at+gp.len)-pct(gp.at)}%">${gp.len}m</div>`;
+      html+=`<div class="tl-row"><div class="tl-name mono">${id}<small>${t.seats} top</small></div>
+        <div class="tl-lane">${gapEl}${blocks}</div></div>`;
+    });
+  });
+  el.innerHTML=html;
+}
+
+function scorecardHTML(){
+  const R=S.report;
+  const tone=p=>p>=.85?"var(--good)":p>=.6?"var(--warn)":"var(--bad)";
+  const head=R.total>=87?"You can run this room."
+    :R.total>=76?"Solid plan with a few soft spots."
+    :R.total>=60?"The room got filled, but not in an order that helps anyone."
+    :"Go again — this fill would hurt the servers and the guests.";
+  return `<div class="card"><div class="score-hero">
+    <div class="g" style="color:${tone(R.total/100)}">${R.grade}</div>
+    <div class="p"><span class="mono">${R.total}</span> / 100 · ${night.label}, seed <span class="mono">#${night.seed}</span></div>
+    <div class="p" style="margin-top:7px;color:var(--ink-2)">${head}</div>
+    ${R.unseated?`<div class="p" style="color:var(--bad)">${R.unseated} reservation${R.unseated>1?"s":""} never reached the floor.</div>`:""}
+    </div><div class="card-bd">
+    ${R.dims.map(d=>`<div class="dim">
+      <div class="r"><span class="k">${d.name}</span><span class="v mono">${Math.round(d.weight*d.pct)}/${d.weight}</span></div>
+      <div class="bar"><i style="width:${Math.round(d.pct*100)}%;background:${tone(d.pct)}"></i></div>
+      <ul class="notes">${d.notes.slice(0,4).map(n=>`<li data-k="${n.k}">${n.t}</li>`).join("")}</ul></div>`).join("")}
+    <details class="model"><summary>Compare with a model fill</summary>
+      <p style="font-size:11.5px;color:var(--muted);margin:8px 0 0">Large parties placed first onto their
+      combinations, then the rest in time order — each pick weighed on visibility, spread, pacing and size fit.</p>
+      <div class="scroll"><table><thead><tr><th>Guest</th><th>Time</th><th>Pax</th><th>You</th><th>Model</th></tr></thead>
+      <tbody>${night.reservations.map(r=>{
+        const you=S.assign[r.id]?S.assign[r.id].tables.join("+"):"—";
+        const m=R.model[r.id]?R.model[r.id].tables.join("+"):"—";
+        return `<tr><td>${esc(r.name)}</td><td class="mono">${fmt(r.time)}</td><td class="mono">${r.party}</td>
+          <td class="mono">${you}</td><td class="mono ${you!==m?"diff":""}">${m}</td></tr>`;}).join("")}</tbody></table></div>
+    </details></div></div>`;
+}
+
+/* ═══════════════════════════════════════════ boot */
+let forcedType=null, MODE="easy";
+document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("[data-mode]").forEach(x=>x.setAttribute("aria-pressed","false"));
+  b.setAttribute("aria-pressed","true");
+  MODE=b.dataset.mode; newNight();
+});
+function newNight(seed){
+  night=genNight(seed!=null?seed:Math.floor(Math.random()*9000)+1000, forcedType, MODE);
+  resetState();
+  if(streaming()) startService();      // no pre-planning: you are at the door from the first party
+  else render();
+}
+document.querySelectorAll("[data-gen]").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("[data-gen]").forEach(x=>x.setAttribute("aria-pressed","false"));
+  b.setAttribute("aria-pressed","true");
+  forcedType=b.dataset.gen==="random"?null:b.dataset.gen;
+  newNight();
+});
+document.getElementById("newNight").onclick=()=>newNight();
+document.getElementById("seedBtn").onclick=()=>{
+  const v=prompt("Night seed — give every trainee the same number and they get the same room:",night.seed);
+  if(v&&!isNaN(+v)) newNight(Math.floor(+v));
+};
+document.getElementById("windowsBtn").onclick=()=>{S.showWindows=!S.showWindows;render();};
+
+document.getElementById("foot").innerHTML=
+  `<b>Built on August 2026.</b> 1,511 seated parties. Volume tiers, arrival curves, party mix and walk-in rate
+   (22.5% of all business) come straight from the book; seat counts are the largest party each table actually took;
+   sections are read off the Server column, where the bar covers B1–B8 plus 51/52/53.
+   <br><b>Fill order</b> <code>${PRIORITY.slice(0,20).join(" ")}</code> — the middle-block half is yours verbatim;
+   the banquette half continues your 21/12/23/14 stagger and holds 15, 25, 16 and 26 back for the 15/16 and 25/26 sevens.
+   <br><b>Turn times</b> <code>1–2: 70m</code> <code>3–4: 85m</code> <code>5–6: 100m</code> <code>7–9: 115m</code>
+   <code>bar: 50m</code>, <code>10m</code> reset, squeeze window <code>60–90m</code> — <b>the one thing August
+   cannot tell us</b>: the export has no departure time. These are set so the room's throughput matches what it
+   actually did. Give me your real turns and the whole drill re-tunes.
+   <br><b>Occasions</b> Birthday, Anniversary and Special Occasion reach for <code>11</code> <code>16</code>
+   <code>21</code> <code>26</code> — the ends of the banquette runs, open on one side instead of wedged between
+   two deuces — or a two-top given a whole 30s/40s table when the room can afford it. Never the 50s, never the bar.
+   Scored softly: it only counts against you when something nicer was actually free. Date Night is tagged but not
+   scored; say the word and it joins them.
+   <br><b>The door is beside 53</b>, so the 50s are the first thing a guest sees and the last thing you should
+   sell — 51 sits deepest in, 53 is on the mat. Note that 16 and 26 are the far end of the room: late in the fill
+   order for an ordinary deuce, but the right seat for an anniversary. Both rules are true at once.
+   <br><b>Difficulty</b> <code>Easy</code> is the book in order — plan the whole night, then take walk-ins.
+   <code>Medium</code> and <code>Hard</code> put you at the door instead: one party at a time, and every one is a
+   question. Medium jumbles the order and adds early and late arrivals; Hard adds part-parties
+   (<b style="color:var(--inc)">pink</b>, showing how many are actually here), heavier lateness
+   (<b style="color:var(--late)">yellow</b>, +5 to +30 minutes) and two parties hitting the stand at once.
+   <b style="color:var(--ready)">Purple</b> is all here and checked in. Hold anyone longer than
+   <code>${CONFIG.walkOutAfter}m</code> past their booking and they walk out, which costs you outright.
+   In those modes <b>Door calls</b> becomes the heaviest dimension at 22 points.`;
+
+newNight();
+</script>
